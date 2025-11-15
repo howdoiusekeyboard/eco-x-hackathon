@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Mukta, Inter } from "next/font/google";
 import "./globals.css";
 import { RegisterSW } from "./register-sw";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 const mukta = Mukta({
   weight: ["200", "300", "400", "600", "800"],
@@ -56,8 +57,10 @@ export default function RootLayout({
         className={`${mukta.variable} ${inter.variable} font-mukta`}
         suppressHydrationWarning
       >
-        <RegisterSW />
-        {children}
+        <AuthProvider>
+          <RegisterSW />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

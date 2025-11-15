@@ -1,10 +1,23 @@
 rules_version = '2';
 
-// Craft rules based on data in your Firestore database
-// allow write: if firestore.get(
-//    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin;
 service firebase.storage {
   match /b/{bucket}/o {
+
+    // Waste images - authenticated users can upload, everyone can read
+    match /waste_images/{imageFile} {
+      // Allow anyone to read waste images (for public dashboard)
+      allow read: if true;
+
+      // Allow authenticated users to upload waste images
+      allow create: if request.auth != null &&
+                      request.resource.size < 5 * 1024 * 1024 && // Max 5MB
+                      request.resource.contentType.matches('image/.*'); // Only images
+
+      // Allow owner to delete their own images
+      allow delete: if request.auth != null;
+    }
+
+    // Deny all other paths by default
     match /{allPaths=**} {
       allow read, write: if false;
     }

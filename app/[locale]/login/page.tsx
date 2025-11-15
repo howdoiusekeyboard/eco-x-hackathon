@@ -9,10 +9,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Input } from "@/components/ui/Input";
+import { signInWithEmail, signUpWithEmail } from "@/lib/auth";
 
 const loginSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
+  name: z.string().min(2, "Name must be at least 2 characters").optional(),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -21,7 +23,10 @@ function LoginForm() {
   const t = useTranslations("login");
   const router = useRouter();
   const searchParams = useSearchParams();
-  const userType = searchParams.get("type") || "farmer";
+  const userType = (searchParams.get("type") || "farmer") as "farmer" | "industry";
+
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [error, setError] = useState<string>("");
 
   const {
     register,
@@ -36,20 +41,45 @@ function LoginForm() {
   };
 
   const onSubmit = async (data: LoginFormData) => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      setError("");
 
-    // Store user type in sessionStorage
-    if (typeof window !== "undefined") {
-      sessionStorage.setItem("userType", userType);
-      sessionStorage.setItem("userName", data.name);
-    }
+      if (isSignUp) {
+        // Sign up new user
+        await signUpWithEmail(
+          data.email,
+          data.password,
+          data.name || "User",
+          userType
+        );
+      } else {
+        // Sign in existing user
+        await signInWithEmail(data.email, data.password);
+      }
 
-    // Redirect based on user type
-    if (userType === "farmer") {
-      router.push("/dashboard");
-    } else {
-      router.push("/marketplace");
+      // Redirect based on user type
+      if (userType === "farmer") {
+        router.push("/dashboard");
+      } else {
+        router.push("/marketplace");
+      }
+    } catch (err: any) {
+      console.error("Authentication error:", err);
+
+      // User-friendly error messages
+      if (err.code === "auth/email-already-in-use") {
+        setError("Email already in use. Please sign in instead.");
+      } else if (err.code === "auth/wrong-password") {
+        setError("Incorrect password. Please try again.");
+      } else if (err.code === "auth/user-not-found") {
+        setError("No account found. Please sign up first.");
+      } else if (err.code === "auth/invalid-email") {
+        setError("Invalid email address.");
+      } else if (err.code === "auth/weak-password") {
+        setError("Password is too weak. Use at least 6 characters.");
+      } else {
+        setError("Authentication failed. Please try again.");
+      }
     }
   };
 
@@ -79,30 +109,61 @@ function LoginForm() {
 
           {/* Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            {/* Error message */}
+            {error && (
+              <div className="p-4 bg-red-100 border-2 border-red-500 rounded-xl">
+                <p className="text-sm text-red-700 font-mukta">{error}</p>
+              </div>
+            )}
+
+            {/* Name field (only for sign up) */}
+            {isSignUp && (
+              <Input
+                label="Name"
+                required
+                placeholder="Enter your name"
+                {...register("name")}
+                error={errors.name?.message}
+              />
+            )}
+
+            {/* Email field */}
             <Input
-              label={t("name")}
+              label="Email"
+              type="email"
               required
-              placeholder="....."
-              {...register("name")}
-              error={errors.name?.message}
+              placeholder="your.email@example.com"
+              {...register("email")}
+              error={errors.email?.message}
             />
 
             <Input
               label={t("password")}
               type="password"
               required
-              placeholder="....."
+              placeholder="At least 6 characters"
               {...register("password")}
               error={errors.password?.message}
             />
 
-            <div className="flex justify-end">
+            {/* Toggle Sign In / Sign Up */}
+            <div className="flex justify-between items-center">
               <button
                 type="button"
-                className="text-sm text-brown hover:underline font-mukta"
+                onClick={() => setIsSignUp(!isSignUp)}
+                className="text-sm text-green hover:underline font-mukta font-semibold"
               >
-                {t("forgotPassword")}
+                {isSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up"}
               </button>
+
+              {!isSignUp && (
+                <button
+                  type="button"
+                  className="text-sm text-brown hover:underline font-mukta"
+                >
+                  {t("forgotPassword")}
+                </button>
+              )}
             </div>
 
             {/* Submit Button */}
@@ -112,8 +173,19 @@ function LoginForm() {
                 disabled={isSubmitting}
                 className="flex items-center justify-center w-[122px] h-[54px] bg-green rounded-pill border-[5px] border-black shadow-card hover:bg-green/90 active:scale-95 transition-all disabled:opacity-50"
               >
-                <ArrowRight className="w-8 h-8 text-white stroke-[3]" />
+                {isSubmitting ? (
+                  <div className="w-6 h-6 border-4 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <ArrowRight className="w-8 h-8 text-white stroke-[3]" />
+                )}
               </button>
+            </div>
+
+            {/* User Type Indicator */}
+            <div className="text-center pt-2">
+              <p className="text-sm text-brown/60 font-mukta">
+                Signing {isSignUp ? "up" : "in"} as <span className="font-bold capitalize">{userType}</span>
+              </p>
             </div>
           </form>
         </div>
