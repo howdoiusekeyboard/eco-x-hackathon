@@ -13,6 +13,19 @@ const geminiApiKey = defineString("GEMINI_API_KEY");
 // Initialize Gemini AI (lazy initialization to avoid config errors)
 let genAI = null;
 
+const MODEL_PREFERENCE = [
+  "gemini-flash-latest",
+  "gemini-2.5-flash",
+];
+
+const generationConfig = {
+  temperature: 0.3,
+  topK: 40,
+  topP: 0.95,
+  maxOutputTokens: 8192,
+  responseMimeType: "application/json",
+};
+
 /**
  * Get Gemini AI instance (lazy initialization)
  * @return {GoogleGenerativeAI} Gemini AI instance
@@ -26,6 +39,62 @@ function getGenAI() {
     genAI = new GoogleGenerativeAI(key);
   }
   return genAI;
+}
+
+/**
+ * Determine if Gemini error is quota/rate related
+ * @param {any} error error object
+ * @return {boolean}
+ */
+function isQuotaError(error) {
+  if (!error) return false;
+  const message = error.message || error.toString();
+  return typeof message === "string" &&
+    (message.includes("429") ||
+      message.toLowerCase().includes("quota") ||
+      message.toLowerCase().includes("rate"));
+}
+
+/**
+ * Generate content with automatic model fallback
+ * @param {string} prompt prompt text
+ * @return {Promise<{modelName: string, aiResponseText: string}>}
+ */
+async function generateContentWithFallback(prompt) {
+  let lastError = null;
+
+  for (const modelName of MODEL_PREFERENCE) {
+    try {
+      console.log(`⚙️ Trying Gemini model: ${modelName}`);
+      const model = getGenAI().getGenerativeModel({
+        model: modelName,
+        generationConfig,
+      });
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      return {
+        modelName,
+        aiResponseText: response.text(),
+      };
+    } catch (error) {
+      lastError = error;
+      const quotaError = isQuotaError(error);
+      console.error(
+          `⚠️ Model ${modelName} failed (${quotaError ? "quota" : "other"}):`,
+          error.message,
+      );
+
+      if (!quotaError) {
+        break;
+      }
+    }
+  }
+
+  throw new Error(
+      `All Gemini models failed. Last error: ${
+        lastError ? lastError.message : "unknown"
+      }`,
+  );
 }
 
 // ============================================
@@ -149,24 +218,14 @@ OUTPUT (return ONLY this JSON, no other text):
   "environmentalImpact": "string"
 }`;
 
-    console.log("🧠 Calling Gemini 2.0 Flash (Thinking Mode)...");
+    console.log("🧠 Attempting Gemini models:", MODEL_PREFERENCE.join(" → "));
 
-    const model = getGenAI().getGenerativeModel({
-      model: "gemini-2.0-flash-thinking-exp-01-21",
-      generationConfig: {
-        temperature: 0.3,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 8192,
-        responseMimeType: "application/json",
-      },
-    });
+    const {
+      modelName: selectedModel,
+      aiResponseText,
+    } = await generateContentWithFallback(prompt);
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const aiResponseText = response.text();
-
-    console.log("📄 Raw Gemini response:", aiResponseText);
+    console.log(`📄 Raw Gemini response (${selectedModel}):`, aiResponseText);
 
     // Parse JSON
     let decision;
@@ -225,7 +284,7 @@ OUTPUT (return ONLY this JSON, no other text):
 
       status: "autonomous_pending",
       agentName: "ECOX Punjab Agent v1.0 (Gemini)",
-      aiModel: "gemini-2.0-flash-thinking-exp",
+      aiModel: selectedModel,
 
       timestamp: admin.firestore.FieldValue.serverTimestamp(),
       createdAt: new Date().toISOString(),
@@ -248,7 +307,7 @@ OUTPUT (return ONLY this JSON, no other text):
       matchedAt: admin.firestore.FieldValue.serverTimestamp(),
       co2SavedTons: co2Saved,
       pm25PreventedKg: pm25Prevented,
-      aiModel: "gemini-2.0-flash-thinking-exp",
+      aiModel: selectedModel,
     });
 
     const totalTime = (Date.now() - startTime) / 1000;

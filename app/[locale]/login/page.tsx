@@ -66,6 +66,13 @@ function LoginForm() {
     } catch (err: any) {
       console.error("Authentication error:", err);
 
+      if (typeof err?.message === "string" && err.message.includes("Firebase configuration error")) {
+        setError(
+          "Firebase configuration is missing or invalid. Please verify all NEXT_PUBLIC_FIREBASE_* environment variables are set in Vercel and that your production domain is added to Firebase Authentication's authorized domains."
+        );
+        return;
+      }
+
       // User-friendly error messages
       if (err.code === "auth/email-already-in-use") {
         setError("Email already in use. Please sign in instead.");

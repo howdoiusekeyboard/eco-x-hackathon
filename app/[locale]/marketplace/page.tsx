@@ -98,7 +98,7 @@ export default function MarketplacePage() {
       </div>
 
       {/* Products Grid */}
-      <div className="relative z-10 px-6 space-y-6">
+      <div className="relative z-10 px-6 space-y-6 mt-4 max-w-2xl mx-auto">
         {products.map((product) => (
           <div key={product.id} className="space-y-2">
             {/* Product Card */}

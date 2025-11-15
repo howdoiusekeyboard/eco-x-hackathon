@@ -88,7 +88,7 @@ export default function FiberProductsPage() {
         </div>
 
         {/* Page Title */}
-        <div className="px-6 py-4">
+        <div className="px-6 py-4 max-w-2xl mx-auto">
           <div className="bg-yellow rounded-[36px] border-2 border-black shadow-card py-4 flex items-center justify-center">
             <h1 className="text-2xl font-mukta font-extrabold text-brown">
               {t("fiberMarket")}
@@ -98,7 +98,7 @@ export default function FiberProductsPage() {
       </div>
 
       {/* Products Grid */}
-      <div className="relative z-10 px-6">
+      <div className="relative z-10 px-6 mt-4 max-w-2xl mx-auto">
         <div className="grid grid-cols-2 gap-4">
           {fiberProducts.map((product, index) => (
             <div key={product.id} className="space-y-2">

@@ -29,9 +29,12 @@ export default function PickupPage() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationSource, setLocationSource] = useState<"gps" | "fallback" | null>(null);
   const [locationLoading, setLocationLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string>("");
+
+  const LUDHIANA_COORDS = { lat: 30.901, lng: 75.8573 };
 
   const {
     register,
@@ -78,13 +81,15 @@ export default function PickupPage() {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
         });
+        setLocationSource("gps");
         setLocationLoading(false);
       },
       (err) => {
         console.error("Geolocation error:", err);
         setError("Could not get location. Using default (Ludhiana, Punjab)");
         // Fallback to Ludhiana center coordinates
-        setLocation({ lat: 30.9010, lng: 75.8573 });
+        setLocation(LUDHIANA_COORDS);
+        setLocationSource("fallback");
         setLocationLoading(false);
       },
       {
@@ -93,6 +98,12 @@ export default function PickupPage() {
         maximumAge: 0,
       }
     );
+  };
+
+  const handleUseFarmLocation = () => {
+    setLocation(LUDHIANA_COORDS);
+    setLocationSource("fallback");
+    setError("");
   };
 
   const onSubmit = async (data: PickupFormData) => {
@@ -171,7 +182,7 @@ export default function PickupPage() {
       </button>
 
       {/* Content */}
-      <div className="relative z-10 pt-20 px-6">
+      <div className="relative z-10 pt-20 px-6 max-w-md mx-auto">
         {/* Title Banner */}
         <div className="mb-8 bg-yellow rounded-[36px] border-2 border-black shadow-card py-4 flex items-center justify-center">
           <h1 className="text-2xl font-mukta font-extrabold text-brown">
@@ -190,13 +201,13 @@ export default function PickupPage() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {/* Waste Type */}
           <div>
-            <label className="block text-xl font-mukta font-semibold text-brown mb-2">
+            <label className="block text-lg font-mukta font-semibold text-brown mb-2">
               Waste Type
               <span className="text-red ml-1">*</span>
             </label>
             <select
               {...register("wasteType")}
-              className="flex w-full rounded-input border border-black bg-cream-light px-6 py-3 text-xl font-inter text-brown focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brown focus-visible:ring-offset-2 h-[52px]"
+              className="flex w-full rounded-input border border-black bg-cream-light px-5 py-3 text-lg font-inter text-brown focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brown focus-visible:ring-offset-2 h-[52px]"
             >
               <option value="">Select waste type...</option>
               <option value="Rice Straw">Rice Straw</option>
@@ -214,7 +225,7 @@ export default function PickupPage() {
 
           {/* Quantity */}
           <div>
-            <label className="block text-xl font-mukta font-semibold text-brown mb-2">
+            <label className="block text-lg font-mukta font-semibold text-brown mb-2">
               Quantity (kg)
               <span className="text-red ml-1">*</span>
             </label>
@@ -222,7 +233,7 @@ export default function PickupPage() {
               type="number"
               {...register("quantityKg", { valueAsNumber: true })}
               placeholder="e.g., 500"
-              className="flex w-full rounded-input border border-black bg-cream-light px-6 py-3 text-xl font-inter text-brown placeholder:text-brown/40 placeholder:font-thin focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brown focus-visible:ring-offset-2 h-[52px]"
+              className="flex w-full rounded-input border border-black bg-cream-light px-5 py-3 text-lg font-inter text-brown placeholder:text-brown/40 placeholder:font-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brown focus-visible:ring-offset-2 h-[52px]"
             />
             {errors.quantityKg && (
               <p className="mt-1 text-sm text-red">{errors.quantityKg.message}</p>
@@ -231,13 +242,13 @@ export default function PickupPage() {
 
           {/* Season */}
           <div>
-            <label className="block text-xl font-mukta font-semibold text-brown mb-2">
+            <label className="block text-lg font-mukta font-semibold text-brown mb-2">
               Season
               <span className="text-red ml-1">*</span>
             </label>
             <select
               {...register("season")}
-              className="flex w-full rounded-input border border-black bg-cream-light px-6 py-3 text-xl font-inter text-brown focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brown focus-visible:ring-offset-2 h-[52px]"
+              className="flex w-full rounded-input border border-black bg-cream-light px-5 py-3 text-lg font-inter text-brown focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brown focus-visible:ring-offset-2 h-[52px]"
             >
               <option value="">Select season...</option>
               <option value="Rabi">Rabi (Winter)</option>
@@ -251,12 +262,12 @@ export default function PickupPage() {
 
           {/* Moisture Level (Optional) */}
           <div>
-            <label className="block text-xl font-mukta font-semibold text-brown mb-2">
+            <label className="block text-lg font-mukta font-semibold text-brown mb-2">
               Moisture Level (Optional)
             </label>
             <select
               {...register("moistureLevel")}
-              className="flex w-full rounded-input border border-black bg-cream-light px-6 py-3 text-xl font-inter text-brown focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brown focus-visible:ring-offset-2 h-[52px]"
+              className="flex w-full rounded-input border border-black bg-cream-light px-5 py-3 text-lg font-inter text-brown focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brown focus-visible:ring-offset-2 h-[52px]"
             >
               <option value="">Select moisture level...</option>
               <option value="Low (<10%)">Low (&lt;10%)</option>
@@ -267,37 +278,53 @@ export default function PickupPage() {
 
           {/* Location Capture */}
           <div>
-            <label className="block text-xl font-mukta font-semibold text-brown mb-2">
+            <label className="block text-lg font-mukta font-semibold text-brown mb-2">
               Location
               <span className="text-red ml-1">*</span>
             </label>
-            <button
-              type="button"
-              onClick={getCurrentLocation}
-              disabled={locationLoading}
-              className={`w-full flex items-center justify-center gap-3 rounded-input border border-black px-6 py-3 text-xl font-mukta h-[55px] transition-all ${
-                location
-                  ? "bg-green text-white"
-                  : "bg-yellow text-brown hover:bg-yellow/90"
-              } ${locationLoading ? "opacity-50 cursor-not-allowed" : ""}`}
-            >
-              <MapPin className="w-6 h-6" />
-              {locationLoading
-                ? "Getting Location..."
-                : location
-                ? `Location Captured ✓ (${location.lat.toFixed(4)}, ${location.lng.toFixed(4)})`
-                : "Get Current Location"}
-            </button>
-            {!location && (
-              <p className="mt-2 text-sm text-brown/60 font-mukta">
-                Tap the button to capture your GPS coordinates
-              </p>
-            )}
+            <div className="flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={getCurrentLocation}
+                disabled={locationLoading}
+                className={`w-full flex items-center justify-center gap-3 rounded-input border border-black px-5 py-3 text-lg font-mukta h-[55px] transition-all ${
+                  location && locationSource === "gps"
+                    ? "bg-green text-white"
+                    : "bg-yellow text-brown hover:bg-yellow/90"
+                } ${locationLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
+                <MapPin className="w-5 h-5" />
+                {locationLoading
+                  ? "Getting Location..."
+                  : location && locationSource === "gps"
+                  ? `Location Captured ✓ (${location.lat.toFixed(4)}, ${location.lng.toFixed(4)})`
+                  : "Get Current Location"}
+              </button>
+              <button
+                type="button"
+                onClick={handleUseFarmLocation}
+                className={`w-full flex items-center justify-center gap-2 rounded-input border border-dashed border-brown px-5 py-3 text-base font-mukta h-[52px] transition-all ${
+                  location && locationSource === "fallback"
+                    ? "bg-green/90 text-white"
+                    : "bg-white text-brown hover:bg-cream-light"
+                }`}
+              >
+                <MapPin className="w-5 h-5" />
+                Use Ludhiana Farm Location
+              </button>
+            </div>
+            <p className="mt-2 text-sm text-brown/60 font-mukta">
+              {location
+                ? locationSource === "gps"
+                  ? "GPS captured from your current device position."
+                  : "Using the Ludhiana farm hub coordinates (30.9010, 75.8573). Ideal when traveling outside Punjab."
+                : "Tap one of the buttons to capture your GPS or use the Ludhiana farm hub fallback."}
+            </p>
           </div>
 
           {/* Photo Upload */}
           <div>
-            <label className="block text-xl font-mukta font-semibold text-brown mb-2">
+            <label className="block text-lg font-mukta font-semibold text-brown mb-2">
               Waste Photo
               <span className="text-red ml-1">*</span>
             </label>
@@ -313,7 +340,7 @@ export default function PickupPage() {
               />
               <label
                 htmlFor="photo-upload"
-                className="flex items-center justify-between w-full rounded-input border border-black bg-cream-light px-6 py-3 text-xl font-mukta text-brown cursor-pointer hover:bg-cream-light/80 h-[55px]"
+                className="flex items-center justify-between w-full rounded-input border border-black bg-cream-light px-5 py-3 text-lg font-mukta text-brown cursor-pointer hover:bg-cream-light/80 h-[55px]"
               >
                 <span className={photoPreview ? "text-green" : "text-brown/60"}>
                   {photoPreview ? "Photo uploaded ✓" : "Upload / Take Photo"}

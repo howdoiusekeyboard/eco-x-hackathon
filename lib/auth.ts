@@ -1,19 +1,55 @@
 import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut as firebaseSignOut,
-  onAuthStateChanged,
-  User as FirebaseUser,
-  updateProfile,
-  sendPasswordResetEmail,
-  signInWithPhoneNumber,
-  RecaptchaVerifier,
-  ConfirmationResult,
   ApplicationVerifier,
+  ConfirmationResult,
+  RecaptchaVerifier,
+  User as FirebaseUser,
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signInWithPhoneNumber,
+  signOut as firebaseSignOut,
+  updateProfile,
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import { User } from './types';
+
+type FirebaseErrorLike = {
+  code?: string;
+  message?: string;
+  stack?: string;
+};
+
+function getFirebaseEnvStatus() {
+  return {
+    NEXT_PUBLIC_FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? 'set' : 'missing',
+    NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ? 'set' : 'missing',
+    NEXT_PUBLIC_FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ? 'set' : 'missing',
+    NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ? 'set' : 'missing',
+    NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+      ? 'set'
+      : 'missing',
+    NEXT_PUBLIC_FIREBASE_APP_ID: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ? 'set' : 'missing',
+  };
+}
+
+function logAuthError(context: string, error: unknown) {
+  const envStatus = getFirebaseEnvStatus();
+
+  if (typeof error === 'object' && error !== null) {
+    const firebaseError = error as FirebaseErrorLike;
+    console.error(`[Auth:${context}] Firebase error`, {
+      code: firebaseError.code ?? 'unknown',
+      message: firebaseError.message ?? 'No message provided',
+      stack: firebaseError.stack,
+      envStatus,
+      raw: error,
+    });
+  } else {
+    console.error(`[Auth:${context}] Unknown error`, { error, envStatus });
+  }
+}
 
 // ============================================
 // EMAIL/PASSWORD AUTHENTICATION
@@ -48,7 +84,7 @@ export async function signUpWithEmail(
 
     return user;
   } catch (error) {
-    console.error('Error signing up with email:', error);
+    logAuthError('signUpWithEmail', error);
     throw error;
   }
 }
@@ -68,7 +104,7 @@ export async function signInWithEmail(
     );
     return userCredential.user;
   } catch (error) {
-    console.error('Error signing in with email:', error);
+    logAuthError('signInWithEmail', error);
     throw error;
   }
 }
@@ -104,7 +140,7 @@ export async function sendOTP(
     );
     return confirmationResult;
   } catch (error) {
-    console.error('Error sending OTP:', error);
+    logAuthError('sendOTP', error);
     throw error;
   }
 }
@@ -141,7 +177,7 @@ export async function verifyOTP(
 
     return user;
   } catch (error) {
-    console.error('Error verifying OTP:', error);
+    logAuthError('verifyOTP', error);
     throw error;
   }
 }
@@ -168,7 +204,7 @@ async function createUserDocument(
       createdAt: serverTimestamp(),
     });
   } catch (error) {
-    console.error('Error creating user document:', error);
+    logAuthError('createUserDocument', error);
     throw error;
   }
 }
@@ -189,7 +225,7 @@ export async function getUserData(uid: string): Promise<User | null> {
     }
     return null;
   } catch (error) {
-    console.error('Error fetching user data:', error);
+    logAuthError('getUserData', error);
     throw error;
   }
 }
@@ -201,7 +237,7 @@ export async function signOut(): Promise<void> {
   try {
     await firebaseSignOut(auth);
   } catch (error) {
-    console.error('Error signing out:', error);
+    logAuthError('signOut', error);
     throw error;
   }
 }
@@ -213,7 +249,7 @@ export async function resetPassword(email: string): Promise<void> {
   try {
     await sendPasswordResetEmail(auth, email);
   } catch (error) {
-    console.error('Error sending password reset email:', error);
+    logAuthError('resetPassword', error);
     throw error;
   }
 }
