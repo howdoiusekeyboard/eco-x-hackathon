@@ -116,6 +116,29 @@ export function subscribeToFarmerWasteBatches(
   });
 }
 
+/**
+ * Listen to confirmed (matched) waste batches for the industry dashboard
+ */
+export function subscribeToMatchedWasteBatches(
+  callback: (batches: WasteBatch[]) => void,
+  limitCount: number = 20
+): Unsubscribe {
+  const q = query(
+    collection(db, COLLECTIONS.WASTE_BATCHES),
+    where('status', '==', 'matched'),
+    orderBy('matchedAt', 'desc'),
+    limit(limitCount)
+  );
+
+  return onSnapshot(q, (snapshot) => {
+    const batches = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as WasteBatch[];
+    callback(batches);
+  });
+}
+
 // ============================================
 // AI MATCHES
 // ============================================

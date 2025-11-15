@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from '@/i18n/routing';
-import { ArrowLeft, TrendingUp, Package, Leaf, DollarSign, MapPin, Zap } from 'lucide-react';
-import { subscribeToAIMatches, acceptAIMatch, rejectAIMatch } from '@/lib/firestore';
-import { AIMatch } from '@/lib/types';
+import { ArrowLeft, Package, Leaf, DollarSign, MapPin, Zap, CheckCircle2, Clock, Droplet } from 'lucide-react';
+import { subscribeToAIMatches, acceptAIMatch, rejectAIMatch, subscribeToMatchedWasteBatches } from '@/lib/firestore';
+import { AIMatch, WasteBatch } from '@/lib/types';
 
 export default function IndustryDashboardPage() {
   const router = useRouter();
   const [matches, setMatches] = useState<AIMatch[]>([]);
+  const [confirmedBatches, setConfirmedBatches] = useState<WasteBatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
@@ -19,6 +20,14 @@ export default function IndustryDashboardPage() {
       setMatches(data);
       setLoading(false);
     }, 50); // Limit to 50 most recent matches
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToMatchedWasteBatches((data) => {
+      setConfirmedBatches(data);
+    }, 12);
 
     return () => unsubscribe();
   }, []);
@@ -66,6 +75,20 @@ export default function IndustryDashboardPage() {
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     return `${diffDays}d ago`;
+  };
+
+  const formatDateTime = (timestamp: any) => {
+    if (!timestamp) return '—';
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    return new Intl.DateTimeFormat('en-IN', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(date);
+  };
+
+  const formatCurrencyINR = (value?: number) => {
+    if (value === undefined || value === null) return '₹0';
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value);
   };
 
   const getStatusColor = (status: string) => {
@@ -180,6 +203,169 @@ export default function IndustryDashboardPage() {
             <p className="text-xs font-mukta text-brown/60 mt-1">CO₂ Saved</p>
           </div>
         </div>
+
+        {/* Confirmed Matches */}
+        {confirmedBatches.length > 0 && (
+          <div className="mb-10">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-xl font-mukta font-bold text-brown">
+                Confirmed Supply Hand-offs
+              </h2>
+              <span className="px-3 py-1 rounded-full bg-white border border-black text-xs font-mukta font-semibold text-brown/70 shadow-card">
+                Live feed • {confirmedBatches.length}
+              </span>
+            </div>
+
+            <div className="space-y-4">
+              {confirmedBatches.map((batch) => {
+                const locationLabel =
+                  batch.location?.district ||
+                  batch.district ||
+                  batch.location?.city ||
+                  batch.region ||
+                  'Punjab';
+                const moisture = batch.moistureLevel || '—';
+                const aiModel = batch.aiModel || 'ECOX Agent';
+                const farmerName = batch.farmerName || 'Farmer';
+
+                return (
+                  <div
+                    key={batch.id}
+                    className="bg-white rounded-[32px] border-2 border-black shadow-card overflow-hidden"
+                  >
+                    <div className="bg-gradient-to-r from-green via-emerald-400 to-teal-400 text-white p-5">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div>
+                          <p className="text-xs font-mukta uppercase tracking-[0.2em] opacity-80">
+                            AI confirmed industry
+                          </p>
+                          <p className="text-2xl font-mukta font-extrabold">
+                            {batch.matchedIndustry}
+                          </p>
+                          <p className="text-sm font-mukta flex items-center gap-2 mt-1 text-white/80">
+                            <CheckCircle2 className="w-4 h-4" />
+                            Confirmed {formatDateTime(batch.matchedAt)}
+                          </p>
+                        </div>
+                        <div className="text-sm font-mukta text-right">
+                          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 border border-white/40 uppercase tracking-wider text-xs font-bold">
+                            <MapPin className="w-4 h-4" />
+                            {locationLabel}
+                          </span>
+                          <p className="mt-2 uppercase tracking-[0.4em] text-white/70 text-[11px]">
+                            {batch.status}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-5 flex flex-col lg:flex-row gap-5">
+                      <div className="flex-1 space-y-4">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          <div className="rounded-2xl border-2 border-black bg-cream-light p-3">
+                            <p className="text-[11px] font-mukta uppercase text-brown/60">
+                              Estimated value
+                            </p>
+                            <p className="text-xl font-mukta font-bold text-brown flex items-center gap-2">
+                              <DollarSign className="w-4 h-4 text-green" />
+                              {formatCurrencyINR(batch.estimatedValue)}
+                            </p>
+                          </div>
+                          <div className="rounded-2xl border-2 border-black bg-white p-3">
+                            <p className="text-[11px] font-mukta uppercase text-brown/60">
+                              Quantity
+                            </p>
+                            <p className="text-xl font-mukta font-bold text-brown">
+                              {batch.quantityKg} kg
+                            </p>
+                          </div>
+                          <div className="rounded-2xl border-2 border-black bg-cream-light p-3">
+                            <p className="text-[11px] font-mukta uppercase text-brown/60">
+                              Matched at
+                            </p>
+                            <p className="text-base font-mukta font-bold text-brown flex items-center gap-2">
+                              <Clock className="w-4 h-4 text-brown/70" />
+                              {formatDateTime(batch.matchedAt)}
+                            </p>
+                          </div>
+                          <div className="rounded-2xl border-2 border-black bg-white p-3">
+                            <p className="text-[11px] font-mukta uppercase text-brown/60">
+                              Season
+                            </p>
+                            <p className="text-xl font-mukta font-bold text-brown">
+                              {batch.season || '—'}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div className="rounded-2xl border-2 border-green-500 bg-green-50 p-3 flex items-start gap-3">
+                            <Leaf className="w-5 h-5 text-green-600" />
+                            <div>
+                              <p className="text-xs font-mukta uppercase text-green-700">
+                                Climate impact
+                              </p>
+                              <p className="text-lg font-mukta font-bold text-green-800">
+                                {(batch.co2SavedTons || 0).toFixed(2)} t CO₂
+                              </p>
+                              <p className="text-xs font-mukta text-green-700 mt-1">
+                                PM2.5 prevented: {(batch.pm25PreventedKg || 0).toFixed(2)} kg
+                              </p>
+                            </div>
+                          </div>
+                          <div className="rounded-2xl border-2 border-blue-500 bg-blue-50 p-3 flex items-start gap-3">
+                            <Droplet className="w-5 h-5 text-blue-600" />
+                            <div>
+                              <p className="text-xs font-mukta uppercase text-blue-700">
+                                Quality signature
+                              </p>
+                              <p className="text-lg font-mukta font-bold text-blue-900">
+                                Moisture: {moisture}
+                              </p>
+                              <p className="text-xs font-mukta text-blue-700 mt-1">
+                                AI model: {aiModel}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-3 text-xs font-mukta">
+                          <span className="px-3 py-1 rounded-full bg-brown/5 border border-brown/20 text-brown font-semibold">
+                            {batch.wasteType} • {batch.region || batch.state || 'Punjab'}
+                          </span>
+                          <span className="px-3 py-1 rounded-full bg-teal-50 border border-teal-200 text-teal-700 font-semibold">
+                            Farmer: {farmerName}
+                          </span>
+                          <span className="px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-700 font-semibold">
+                            AI status: Matched
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="lg:w-56">
+                        <div className="rounded-3xl border-2 border-black overflow-hidden h-full min-h-[180px] bg-cream-light">
+                          {batch.photoUrl ? (
+                            <img
+                              src={batch.photoUrl}
+                              alt={batch.wasteType}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex flex-col items-center justify-center text-center p-4 text-brown/60">
+                              <Package className="w-10 h-10 mb-2" />
+                              <p className="text-sm font-mukta">No photo uploaded</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Matches List */}
         <div className="space-y-4">
