@@ -99,7 +99,7 @@ function ConfirmationContent() {
               variant="danger"
               size="md"
               onClick={handleChangeTime}
-              className="flex-1"
+              className="flex-1 h-auto min-h-[56px] px-6 text-xl leading-tight text-center whitespace-normal break-words"
             >
               {t("changeTime")}
             </Button>

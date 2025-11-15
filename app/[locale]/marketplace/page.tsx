@@ -82,16 +82,16 @@ export default function MarketplacePage() {
         </div>
 
         {/* Search Bar */}
-        <div className="px-6 py-4">
+        <div className="px-6 pt-4 pb-2 w-full max-w-2xl mx-auto">
           <div className="relative">
             <input
               type="text"
-              placeholder="KhetSe पर ढूंढे"
-              className="w-full h-[52px] rounded-input border border-black bg-cream-light px-12 text-xl font-mukta text-brown placeholder:text-brown/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brown focus-visible:ring-offset-2"
+              placeholder={t("search")}
+              className="w-full h-12 rounded-input border border-black bg-cream-light pl-11 pr-16 text-base md:text-lg font-mukta text-brown placeholder:text-brown/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brown focus-visible:ring-offset-2"
             />
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-brown/60" />
-            <button className="absolute right-3 top-1/2 -translate-y-1/2 w-[35px] h-[35px] rounded-full bg-yellow flex items-center justify-center">
-              <Mic className="w-5 h-5 text-brown" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brown/60" />
+            <button className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-yellow flex items-center justify-center border border-black/20">
+              <Mic className="w-4 h-4 text-brown" />
             </button>
           </div>
         </div>

@@ -8,7 +8,9 @@ const {GoogleGenerativeAI} = require("@google/generative-ai");
 admin.initializeApp();
 
 // Define Gemini API key as a parameter
-const geminiApiKey = defineString("GEMINI_API_KEY");
+const geminiApiKey = defineString("GEMINI_API_KEY", {
+  default: "AIzaSyAnGIhvRYWN7Yie-krcMZhpT_rekNpLD9M",
+});
 
 // Initialize Gemini AI (lazy initialization to avoid config errors)
 let genAI = null;
@@ -17,6 +19,13 @@ const MODEL_PREFERENCE = [
   "gemini-flash-latest",
   "gemini-2.5-flash",
 ];
+
+const RETRY_CONFIG = {
+  maxAttempts: 3,
+  initialDelayMs: 2000,
+  multiplier: 2,
+  maxDelayMs: 64000,
+};
 
 const generationConfig = {
   temperature: 0.3,
@@ -56,45 +65,229 @@ function isQuotaError(error) {
 }
 
 /**
+ * Sleep helper
+ * @param {number} ms milliseconds
+ * @return {Promise<void>}
+ */
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Structured log helper
+ * @param {string} label log label
+ * @param {Record<string, any>} payload payload
+ */
+function logStructured(label, payload) {
+  try {
+    console.log(`[${label}] ${JSON.stringify(payload)}`);
+  } catch (err) {
+    console.log(`[${label}]`, payload);
+  }
+}
+
+/**
  * Generate content with automatic model fallback
  * @param {string} prompt prompt text
- * @return {Promise<{modelName: string, aiResponseText: string}>}
+ * @return {Promise<{
+ *   modelName: string,
+ *   aiResponseText: string,
+ *   attemptLog: any[],
+ * }>}
  */
 async function generateContentWithFallback(prompt) {
   let lastError = null;
+  const attemptLog = [];
+  let quotaOnlyFailures = true;
+  const modelsTried = [];
 
   for (const modelName of MODEL_PREFERENCE) {
+    modelsTried.push(modelName);
+    let attempt = 0;
+    let delay = RETRY_CONFIG.initialDelayMs;
     try {
-      console.log(`⚙️ Trying Gemini model: ${modelName}`);
-      const model = getGenAI().getGenerativeModel({
-        model: modelName,
-        generationConfig,
-      });
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      return {
-        modelName,
-        aiResponseText: response.text(),
-      };
-    } catch (error) {
-      lastError = error;
-      const quotaError = isQuotaError(error);
-      console.error(
-          `⚠️ Model ${modelName} failed (${quotaError ? "quota" : "other"}):`,
-          error.message,
-      );
+      while (attempt < RETRY_CONFIG.maxAttempts) {
+        attempt++;
+        const attemptMeta = {modelName, attempt};
+        logStructured("geminiAttempt", {
+          modelName,
+          attempt,
+          maxAttempts: RETRY_CONFIG.maxAttempts,
+        });
+        const model = getGenAI().getGenerativeModel({
+          model: modelName,
+          generationConfig,
+        });
+        try {
+          const result = await model.generateContent(prompt);
+          const response = await result.response;
+          attemptMeta.success = true;
+          attemptLog.push(attemptMeta);
+          return {
+            modelName,
+            aiResponseText: response.text(),
+            attemptLog,
+          };
+        } catch (innerError) {
+          lastError = innerError;
+          const quotaError = isQuotaError(innerError);
+          quotaOnlyFailures = quotaOnlyFailures && quotaError;
+          attemptMeta.success = false;
+          attemptMeta.errorMessage = innerError.message;
+          attemptMeta.quotaError = quotaError;
+          attemptLog.push(attemptMeta);
 
-      if (!quotaError) {
-        break;
+          console.error(
+              `⚠️ Model ${modelName} attempt ${attempt} ` +
+          `(${quotaError ? "quota" : "other"}):`,
+              innerError.message,
+          );
+
+          if (quotaError && attempt < RETRY_CONFIG.maxAttempts) {
+            const sleepMs = Math.min(delay, RETRY_CONFIG.maxDelayMs);
+            logStructured("geminiBackoff", {
+              modelName,
+              attempt,
+              sleepMs,
+            });
+            await sleep(sleepMs);
+            delay = delay * RETRY_CONFIG.multiplier;
+            continue;
+          }
+
+          if (quotaError) {
+            break;
+          } else {
+            quotaOnlyFailures = false;
+            break;
+          }
+        }
       }
+    } catch (error) {
+      // This catch kept for safety, though inner try handles most cases
+      lastError = error;
+      quotaOnlyFailures = quotaOnlyFailures && isQuotaError(error);
+      attemptLog.push({
+        modelName,
+        attempt: "wrapped",
+        success: false,
+        errorMessage: error.message,
+        quotaError: isQuotaError(error),
+      });
     }
   }
 
-  throw new Error(
-      `All Gemini models failed. Last error: ${
-        lastError ? lastError.message : "unknown"
-      }`,
-  );
+  logStructured("geminiExhausted", {
+    modelsTried,
+    quotaOnlyFailures,
+    attempts: attemptLog,
+  });
+
+  const errorMessage = `All Gemini models failed after ${
+    attemptLog.length
+  } attempts. Last error: ${
+    lastError ? lastError.message : "unknown"
+  }`;
+
+  const terminalError = new Error(errorMessage);
+  terminalError.attemptLog = attemptLog;
+  terminalError.modelsTried = modelsTried;
+  terminalError.isQuotaExhausted = quotaOnlyFailures;
+  throw terminalError;
+}
+
+/**
+ * Build deterministic fallback decision when Gemini quota exhausted
+ * @param {Object} wasteData waste batch data
+ * @param {Array<Object>} industries list of industries with distance
+ * @return {Object} decision payload
+ */
+function buildHeuristicDecision(wasteData, industries) {
+  if (!industries || industries.length === 0) {
+    throw new Error("No industries available for fallback decision");
+  }
+
+  const wasteType = (wasteData.wasteType || "").toLowerCase();
+  const quantity = wasteData.quantityKg || 0;
+
+  const scored = industries.map((industry) => {
+    const preferredTypes = (industry.preferredWasteTypes ||
+        industry.demandCategories || []).map((type) => type.toLowerCase());
+    const typeMatches = preferredTypes.length === 0 ? 0.6 :
+        (preferredTypes.includes(wasteType) ? 1 : 0.3);
+    const typeScore = Math.round(typeMatches * 100);
+
+    const distance = industry.distance || 0;
+    const proximityScore = Math.max(0, Math.round(100 - distance * 2));
+
+    const demandCapacity = industry.demandKg ||
+        industry.capacityKgPerMonth || 50000;
+    const demandFit =
+      demandCapacity > 0 ?
+        Math.min(100, Math.round((quantity / demandCapacity) * 100)) : 70;
+    const demandFitScore = Math.max(10, demandFit);
+
+    const moisture = (wasteData.moistureLevel || "").toLowerCase();
+    let qualityScore = 80;
+    if (moisture.includes("low")) qualityScore = 95;
+    else if (moisture.includes("medium")) qualityScore = 85;
+    else if (moisture.includes("high")) qualityScore = 65;
+
+    const priceRange = industry.priceRange || {};
+    const priceMid = (
+      (priceRange.min || 2.5) +
+      (priceRange.max || 3.5)
+    ) / 2;
+    const pricePerKg = Number(priceMid.toFixed(2));
+    const priceScore = Math.min(100, Math.round((pricePerKg / 4) * 100));
+
+    const totalScore = Math.round(
+        (0.4 * typeScore) +
+        (0.3 * proximityScore) +
+        (0.2 * demandFitScore) +
+        (0.1 * priceScore),
+    );
+
+    return {
+      industry,
+      totalScore,
+      factors: {
+        proximityScore,
+        demandFitScore,
+        qualityScore,
+        priceScore,
+      },
+      pricePerKg,
+    };
+  }).sort((a, b) => b.totalScore - a.totalScore);
+
+  const best = scored[0];
+  const industryDistance = Number(best.industry.distance || 0);
+  const pm25Prevented =
+    (quantity / 1000) * 1.5;
+  const logisticsNote = industryDistance <= 20 ?
+    "Nearby pickup route available" :
+    "Schedule optimized transport route";
+
+  const reasoningParts = [
+    "Fallback match selected using deterministic heuristics",
+    `considering waste type compatibility, ${Math.round(industryDistance)}km`,
+    "distance, and demand capacity in Punjab.",
+  ];
+
+  return {
+    industryId: best.industry.id,
+    industryName: best.industry.name || best.industry.company_name ||
+      "Punjab Industry",
+    pricePerKg: best.pricePerKg,
+    reasoning: reasoningParts.join(" "),
+    matchScore: best.totalScore,
+    factors: best.factors,
+    distanceKm: Number(industryDistance.toFixed(1)),
+    logisticsNote,
+    environmentalImpact: `Avoids burning ${quantity}kg waste, preventing ` +
+      `${pm25Prevented.toFixed(2)}kg PM2.5 in Ludhiana.`,
+  };
 }
 
 // ============================================
@@ -220,28 +413,50 @@ OUTPUT (return ONLY this JSON, no other text):
 
     console.log("🧠 Attempting Gemini models:", MODEL_PREFERENCE.join(" → "));
 
-    const {
-      modelName: selectedModel,
-      aiResponseText,
-    } = await generateContentWithFallback(prompt);
+    let selectedModel = null;
+    let aiResponseText = null;
+    let decision = null;
+    let fallbackUsed = false;
+    let fallbackMetadata = null;
+    let attemptLogSummary = [];
 
-    console.log(`📄 Raw Gemini response (${selectedModel}):`, aiResponseText);
-
-    // Parse JSON
-    let decision;
     try {
+      const result = await generateContentWithFallback(prompt);
+      selectedModel = result.modelName;
+      aiResponseText = result.aiResponseText;
+      attemptLogSummary = result.attemptLog || [];
+      console.log(`📄 Raw Gemini response (${selectedModel}):`, aiResponseText);
+
       const cleanedResponse = aiResponseText
           .replace(/```json\n?/g, "")
           .replace(/```\n?/g, "")
           .trim();
       decision = JSON.parse(cleanedResponse);
-    } catch (parseError) {
-      console.error("❌ JSON parse failed:", parseError);
-      const jsonMatch = aiResponseText.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        decision = JSON.parse(jsonMatch[0]);
+    } catch (error) {
+      if (error.isQuotaExhausted) {
+        fallbackUsed = true;
+        selectedModel = "heuristic-fallback";
+        attemptLogSummary = error.attemptLog || [];
+        fallbackMetadata = {
+          reason: "Gemini quota exhausted - deterministic fallback used",
+          errorMessage: error.message,
+          attemptedModels: error.modelsTried || [],
+          attemptCount: (error.attemptLog || []).length || 0,
+          attempts: error.attemptLog || [],
+        };
+        logStructured("geminiFallbackActivated", fallbackMetadata);
+        decision = buildHeuristicDecision(wasteData, industriesWithDistance);
+      } else if (aiResponseText) {
+        // Parsing failure after response
+        console.error("❌ JSON parse failed:", error);
+        const jsonMatch = aiResponseText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          decision = JSON.parse(jsonMatch[0]);
+        } else {
+          throw new Error("Could not parse AI response");
+        }
       } else {
-        throw new Error("Could not parse AI response");
+        throw error;
       }
     }
 
@@ -254,6 +469,9 @@ OUTPUT (return ONLY this JSON, no other text):
     const pm25Prevented = (wasteData.quantityKg / 1000) * 1.5;
 
     // Save match to Firestore
+    const matchStatus = fallbackUsed ?
+      "fallback_pending" :
+      "autonomous_pending";
     const matchRef = await admin.firestore().collection("ai_matches").add({
       wasteBatchId: batchId,
       farmerId: wasteData.farmerId,
@@ -282,9 +500,13 @@ OUTPUT (return ONLY this JSON, no other text):
       state: "Punjab",
       country: "India",
 
-      status: "autonomous_pending",
+      status: matchStatus,
       agentName: "ECOX Punjab Agent v1.0 (Gemini)",
       aiModel: selectedModel,
+      decisionSource: fallbackUsed ? "heuristic" : "gemini",
+      fallbackUsed,
+      fallbackDetails: fallbackMetadata,
+      geminiAttemptLog: attemptLogSummary,
 
       timestamp: admin.firestore.FieldValue.serverTimestamp(),
       createdAt: new Date().toISOString(),
@@ -299,8 +521,8 @@ OUTPUT (return ONLY this JSON, no other text):
     console.log("💾 Match saved:", matchRef.id);
 
     // Update waste batch
-    await snap.ref.update({
-      status: "matched",
+    const batchUpdate = {
+      status: fallbackUsed ? "match_pending" : "matched",
       matchId: matchRef.id,
       matchedIndustry: decision.industryName,
       estimatedValue: totalValue,
@@ -308,7 +530,14 @@ OUTPUT (return ONLY this JSON, no other text):
       co2SavedTons: co2Saved,
       pm25PreventedKg: pm25Prevented,
       aiModel: selectedModel,
-    });
+    };
+
+    if (fallbackUsed) {
+      batchUpdate.matchWarning = fallbackMetadata.reason;
+      batchUpdate.aiQuotaExhausted = true;
+    }
+
+    await snap.ref.update(batchUpdate);
 
     const totalTime = (Date.now() - startTime) / 1000;
     console.log(`🎉 Matching completed in ${totalTime.toFixed(2)}s`);
