@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/routing";
 import { ArrowLeft } from "lucide-react";
 import { Card } from "@/components/ui/Card";
+import Image from "next/image";
 
 export default function UserTypePage() {
   const t = useTranslations("userType");
@@ -50,7 +51,13 @@ export default function UserTypePage() {
           {/* Background Image Placeholder */}
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="w-[287px] h-[153px] bg-gradient-to-br from-purple/40 to-green/30 rounded-[20px] flex items-center justify-center">
-              <span className="text-6xl">🌾</span>
+              <Image
+                src="/assets/farmer.png"
+                alt="Farmer"
+                width={120}
+                height={120}
+                className="object-contain"
+              />
             </div>
           </div>
 
@@ -75,7 +82,13 @@ export default function UserTypePage() {
           {/* Background Image Placeholder */}
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="w-[287px] h-[153px] bg-gradient-to-br from-teal/40 to-blue-300/30 rounded-[20px] flex items-center justify-center">
-              <span className="text-6xl">🏭</span>
+              <Image
+                src="/assets/market.png"
+                alt="Market/Buyer"
+                width={120}
+                height={120}
+                className="object-contain"
+              />
             </div>
           </div>
 

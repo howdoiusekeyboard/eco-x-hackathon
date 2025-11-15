@@ -5,6 +5,7 @@ import { useRouter } from "@/i18n/routing";
 import { useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Sidebar } from "@/components/layout/Sidebar";
+import Image from "next/image";
 
 export default function FiberProductsPage() {
   const t = useTranslations("marketplace");
@@ -15,25 +16,25 @@ export default function FiberProductsPage() {
     {
       id: "compost",
       name: t("compost"),
-      image: "🌱",
+      image: "/assets/khad.png",
       position: "top-left",
     },
     {
       id: "basket",
       name: t("basket"),
-      image: "🧺",
+      image: "/assets/tokri.png",
       position: "top-right",
     },
     {
       id: "handbag",
       name: t("handbag"),
-      image: "👜",
+      image: "/assets/handbag.png",
       position: "bottom-left",
     },
     {
       id: "mat",
       name: t("mat"),
-      image: "🎋",
+      image: "/assets/chatai.png",
       position: "bottom-right",
     },
   ];
@@ -69,10 +70,14 @@ export default function FiberProductsPage() {
 
           {/* Logo */}
           <div className="flex-1 flex items-center justify-center">
-            <div className="w-[204px] h-[39px] bg-gradient-to-r from-gold to-yellow rounded-[20px] border-2 border-black flex items-center justify-center">
-              <span className="text-lg font-mukta font-extrabold text-brown">
-                KhetSe
-              </span>
+            <div className="w-[204px] h-[39px] bg-gradient-to-r from-gold to-yellow rounded-[20px] border-2 border-black flex items-center justify-center px-2">
+              <Image
+                src="/assets/khetse logo.png"
+                alt="KhetSe Logo"
+                width={180}
+                height={35}
+                className="object-contain"
+              />
             </div>
           </div>
 
@@ -105,7 +110,13 @@ export default function FiberProductsPage() {
               >
                 {/* Background Image/Icon */}
                 <div className="absolute inset-0 bg-gradient-to-br from-teal/20 to-green/20 flex items-center justify-center">
-                  <div className="text-6xl">{product.image}</div>
+                  <Image
+                    src={product.image}
+                    alt={product.name}
+                    width={120}
+                    height={120}
+                    className="object-contain"
+                  />
                 </div>
 
                 {/* Circular Border Decorations (matching Figma design) */}

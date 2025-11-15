@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Search, Mic } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Sidebar } from "@/components/layout/Sidebar";
+import Image from "next/image";
 
 export default function DashboardPage() {
   const t = useTranslations("dashboard");
@@ -49,10 +50,14 @@ export default function DashboardPage() {
 
           {/* Logo */}
           <div className="flex-1 flex items-center justify-center">
-            <div className="w-[204px] h-[39px] bg-gradient-to-r from-gold to-yellow rounded-[20px] border-2 border-black flex items-center justify-center">
-              <span className="text-lg font-mukta font-extrabold text-brown">
-                KhetSe
-              </span>
+            <div className="w-[204px] h-[39px] bg-gradient-to-r from-gold to-yellow rounded-[20px] border-2 border-black flex items-center justify-center px-2">
+              <Image
+                src="/assets/khetse logo.png"
+                alt="KhetSe Logo"
+                width={180}
+                height={35}
+                className="object-contain"
+              />
             </div>
           </div>
 
@@ -88,7 +93,13 @@ export default function DashboardPage() {
         >
           {/* Background Image Placeholder */}
           <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-green/30 to-teal/20">
-            <div className="text-8xl">🚜</div>
+            <Image
+              src="/assets/waste.png"
+              alt="Waste Pickup"
+              width={150}
+              height={150}
+              className="object-contain"
+            />
           </div>
 
           {/* Text Banner */}
@@ -108,7 +119,13 @@ export default function DashboardPage() {
           {/* Background Image Placeholder */}
           <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-orange/30 to-yellow/20">
             <div className="w-[182px] h-[177px] flex items-center justify-center">
-              <div className="text-8xl">🧮</div>
+              <Image
+                src="/assets/balance.png"
+                alt="Calculator"
+                width={150}
+                height={150}
+                className="object-contain"
+              />
             </div>
           </div>
 

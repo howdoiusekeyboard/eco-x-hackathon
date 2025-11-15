@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Search, Mic } from "lucide-react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Card } from "@/components/ui/Card";
+import Image from "next/image";
 
 export default function MarketplacePage() {
   const t = useTranslations("marketplace");
@@ -16,13 +17,13 @@ export default function MarketplacePage() {
     {
       id: "straw",
       name: t("straw"),
-      image: "🌾",
+      image: "/assets/parali.png",
       category: "raw-material",
     },
     {
       id: "fiber-market",
       name: t("fiberMarket"),
-      image: "🧵",
+      image: "/assets/chatai.png",
       category: "processed",
       link: "./fiber-products",
     },
@@ -63,10 +64,14 @@ export default function MarketplacePage() {
 
           {/* Logo */}
           <div className="flex-1 flex items-center justify-center">
-            <div className="w-[204px] h-[39px] bg-gradient-to-r from-gold to-yellow rounded-[20px] border-2 border-black flex items-center justify-center">
-              <span className="text-lg font-mukta font-extrabold text-brown">
-                KhetSe
-              </span>
+            <div className="w-[204px] h-[39px] bg-gradient-to-r from-gold to-yellow rounded-[20px] border-2 border-black flex items-center justify-center px-2">
+              <Image
+                src="/assets/khetse logo.png"
+                alt="KhetSe Logo"
+                width={180}
+                height={35}
+                className="object-contain"
+              />
             </div>
           </div>
 
@@ -104,7 +109,13 @@ export default function MarketplacePage() {
             >
               {/* Background/Image */}
               <div className="absolute inset-0 bg-gradient-to-br from-orange/20 to-yellow/30 flex items-center justify-center border-b-2 border-black">
-                <div className="text-8xl">{product.image}</div>
+                <Image
+                  src={product.image}
+                  alt={product.name}
+                  width={150}
+                  height={150}
+                  className="object-contain"
+                />
               </div>
 
               {/* Category Badge (optional) */}

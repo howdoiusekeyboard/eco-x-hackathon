@@ -5,6 +5,7 @@ import { useRouter } from "@/i18n/routing";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { ArrowLeft, ChevronDown, MapPin } from "lucide-react";
+import Image from "next/image";
 
 export default function ProductDetailPage() {
   const t = useTranslations("product");
@@ -72,7 +73,13 @@ export default function ProductDetailPage() {
 
         {/* Product Image */}
         <div className="mb-6 bg-gradient-to-br from-orange/30 to-yellow/20 rounded-[36px] border-2 border-black shadow-card h-[194px] flex items-center justify-center overflow-hidden">
-          <div className="text-8xl">🧱</div>
+          <Image
+            src="/assets/brickets.png"
+            alt="Briquettes"
+            width={150}
+            height={150}
+            className="object-contain"
+          />
         </div>
 
         {/* Product Details Card */}
