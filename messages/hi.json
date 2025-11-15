@@ -1,0 +1,81 @@
+{
+  "languageSelection": {
+    "title": "कृपया अपनी भाषा चुनें",
+    "greeting": "नमस्ते",
+    "subtitle": "Please Select Your Language",
+    "hindi": "हिंदी",
+    "english": "English",
+    "tamil": "தமிழ்",
+    "bengali": "বাংলা",
+    "telugu": "తెలుగు",
+    "kannada": "ಕನ್ನಡ",
+    "comingSoon": "जल्द आ रहा है"
+  },
+  "userType": {
+    "farmer": "अवशेष उठाओ",
+    "buyer": "मैं खरीदार हूँ"
+  },
+  "login": {
+    "title": "लॉग इन",
+    "name": "नाम",
+    "password": "पासवर्ड",
+    "forgotPassword": "पासवर्ड भूल गए?"
+  },
+  "dashboard": {
+    "search": "KhetSe पर ढूंढे",
+    "pickupWaste": "पराली उठवाएँ",
+    "calculator": "पराली मूल्यगणक"
+  },
+  "pickupForm": {
+    "title": "पराली उठवाएँ",
+    "cropType": "आपके पास कौन सी फसल का अवशेष है?",
+    "harvestDate": "आपने फसल की कटाई कब की थी?",
+    "location": "आपका खेत किस गाँव और ज़िले में है?",
+    "quantity": "आपके पास कितनी मात्रा में अवशेष है?",
+    "burning": "क्या आपने अवशेष को जलाया है या जलाने की योजना है?",
+    "photo": "कृपया खेत और अवशेष की एक फोटो अपलोड करें।",
+    "uploadPhoto": "फ़ोटो अपलोड करें"
+  },
+  "datePicker": {
+    "title": "तिथि और समय",
+    "changeTime": "समय बदलें"
+  },
+  "confirmation": {
+    "pickupMessage": "हमारी टीम आपसे जल्द ही संपर्क करेगी।धन्यवाद!",
+    "deliveryMessage": "हमारी टीम आप तक सही समय पर डिलीवरी सुनिश्चित करेगी धन्यवाद!",
+    "changeTime": "समय बदलें"
+  },
+  "marketplace": {
+    "straw": "पराली",
+    "fiberMarket": "रेशा बाज़ार",
+    "compost": "खाद",
+    "basket": "टोकरी",
+    "mat": "चटाई",
+    "handbag": "हैंडबैग"
+  },
+  "product": {
+    "briquettes": "जैवमंडल ब्रिकेट्स",
+    "price": "मूल्य : ₹{price} प्रति किलो",
+    "quantity": "मात्रा : {quantity}",
+    "taxIncluded": "सभी टैक्स सहित",
+    "confirm": "कन्फर्म करे",
+    "deliveryAddress": "डिलीवरी का पता डाले:"
+  },
+  "menu": {
+    "home": "मुखपृष्ठ पर जाएँ",
+    "myAccount": "मेरा अकाउंट",
+    "myOrders": "मेरे ऑर्डर",
+    "rent": "किराया",
+    "receipt": "इ-रसीद",
+    "farmerTalk": "किसान की बात",
+    "contactUs": "हमसे संपर्क करें",
+    "signOut": "साइन आउट",
+    "language": "हिन्दी"
+  },
+  "common": {
+    "back": "वापस",
+    "next": "अगला",
+    "submit": "जमा करें",
+    "required": "*"
+  }
+}

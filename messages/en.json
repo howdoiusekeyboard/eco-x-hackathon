@@ -1,0 +1,81 @@
+{
+  "languageSelection": {
+    "title": "Please Select Your Language",
+    "greeting": "Hello",
+    "subtitle": "कृपया अपनी भाषा चुनें",
+    "hindi": "हिंदी",
+    "english": "English",
+    "tamil": "தமிழ்",
+    "bengali": "বাংলা",
+    "telugu": "తెలుగు",
+    "kannada": "ಕನ್ನಡ",
+    "comingSoon": "Coming Soon"
+  },
+  "userType": {
+    "farmer": "Pickup Waste",
+    "buyer": "I am a Buyer"
+  },
+  "login": {
+    "title": "Log In",
+    "name": "Name",
+    "password": "Password",
+    "forgotPassword": "Forgot Password?"
+  },
+  "dashboard": {
+    "search": "Search on KhetSe",
+    "pickupWaste": "Get Waste Picked Up",
+    "calculator": "Waste Calculator"
+  },
+  "pickupForm": {
+    "title": "Get Waste Picked Up",
+    "cropType": "What crop residue do you have?",
+    "harvestDate": "When did you harvest the crop?",
+    "location": "Which village and district is your farm in?",
+    "quantity": "How much residue do you have?",
+    "burning": "Have you burned the residue or plan to burn it?",
+    "photo": "Please upload a photo of the field and residue.",
+    "uploadPhoto": "Upload Photo"
+  },
+  "datePicker": {
+    "title": "Date and Time",
+    "changeTime": "Change Time"
+  },
+  "confirmation": {
+    "pickupMessage": "Our team will contact you soon. Thank you!",
+    "deliveryMessage": "Our team will ensure timely delivery. Thank you!",
+    "changeTime": "Change Time"
+  },
+  "marketplace": {
+    "straw": "Straw",
+    "fiberMarket": "Fiber Market",
+    "compost": "Compost",
+    "basket": "Basket",
+    "mat": "Mat",
+    "handbag": "Handbag"
+  },
+  "product": {
+    "briquettes": "Biosphere Briquettes",
+    "price": "Price: ₹{price} per kilo",
+    "quantity": "Quantity: {quantity}",
+    "taxIncluded": "All taxes included",
+    "confirm": "Confirm",
+    "deliveryAddress": "Enter delivery address:"
+  },
+  "menu": {
+    "home": "Go to Home",
+    "myAccount": "My Account",
+    "myOrders": "My Orders",
+    "rent": "Rent",
+    "receipt": "E-Receipt",
+    "farmerTalk": "Farmer's Talk",
+    "contactUs": "Contact Us",
+    "signOut": "Sign Out",
+    "language": "English"
+  },
+  "common": {
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "required": "*"
+  }
+}
