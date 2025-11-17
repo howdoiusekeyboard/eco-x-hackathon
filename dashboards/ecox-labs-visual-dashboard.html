@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECOX Labs - Visual Flow Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --success-gradient: linear-gradient(135deg, #00b4db 0%, #0083b0 100%);
+            --warning-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --info-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --dark-gradient: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            --accent-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Animated Background */
+        .bg-animation {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            opacity: 0.4;
+        }
+
+        .bg-animation span {
+            position: absolute;
+            display: block;
+            width: 20px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            animation: float 25s infinite;
+            bottom: 0;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .logo {
+            font-size: 3.5em;
+            font-weight: 900;
+            background: linear-gradient(135deg, #00ff87 0%, #60efff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: glow 2s ease-in-out infinite alternate;
+            letter-spacing: 2px;
+        }
+
+        @keyframes glow {
+            from { filter: drop-shadow(0 0 20px rgba(0, 255, 135, 0.5)); }
+            to { filter: drop-shadow(0 0 30px rgba(96, 239, 255, 0.8)); }
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1.2em;
+            margin-top: 10px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        /* Navigation */
+        .nav-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            padding: 20px;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            padding: 12px 30px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.9);
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            backdrop-filter: blur(10px);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transition: width 0.6s, height 0.6s;
+            transform: translate(-50%, -50%);
+        }
+
+        .nav-btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 15px 35px rgba(0, 255, 135, 0.3);
+            border-color: rgba(0, 255, 135, 0.5);
+        }
+
+        .nav-btn.active {
+            background: var(--primary-gradient);
+            border-color: transparent;
+        }
+
+        /* Diagram Sections */
+        .diagram-container {
+            display: none;
+            padding: 40px;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        .diagram-container.active {
+            display: block;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* System Architecture Diagram */
+        .system-architecture {
+            display: grid;
+            gap: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .arch-layer {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .arch-layer::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: var(--primary-gradient);
+            border-radius: 20px;
+            opacity: 0;
+            z-index: -1;
+            transition: opacity 0.3s;
+        }
+
+        .arch-layer:hover::before {
+            opacity: 0.3;
+        }
+
+        .layer-title {
+            font-size: 1.5em;
+            font-weight: 700;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #00ff87 0%, #60efff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .components-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .component-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .component-card::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(0, 255, 135, 0.3) 0%, transparent 70%);
+            transform: translate(-50%, -50%) scale(0);
+            transition: transform 0.5s;
+            border-radius: 50%;
+        }
+
+        .component-card:hover::after {
+            transform: translate(-50%, -50%) scale(2);
+        }
+
+        .component-card:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 10px 30px rgba(0, 255, 135, 0.3);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .component-icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .component-name {
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .component-desc {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.85em;
+        }
+
+        /* Flow Diagram */
+        .flow-diagram {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px);
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .flow-step {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+            position: relative;
+            animation: slideIn 0.6s ease-out backwards;
+        }
+
+        .flow-step:nth-child(1) { animation-delay: 0.1s; }
+        .flow-step:nth-child(2) { animation-delay: 0.2s; }
+        .flow-step:nth-child(3) { animation-delay: 0.3s; }
+        .flow-step:nth-child(4) { animation-delay: 0.4s; }
+        .flow-step:nth-child(5) { animation-delay: 0.5s; }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .step-number {
+            width: 60px;
+            height: 60px;
+            background: var(--primary-gradient);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            font-weight: 700;
+            color: white;
+            margin-right: 30px;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .step-number::after {
+            content: '';
+            position: absolute;
+            width: 2px;
+            height: 100px;
+            background: linear-gradient(to bottom, rgba(102, 126, 234, 0.5), transparent);
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .flow-step:last-child .step-number::after {
+            display: none;
+        }
+
+        .step-content {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .step-content:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(10px);
+            box-shadow: 0 10px 30px rgba(0, 255, 135, 0.2);
+        }
+
+        .step-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.95);
+            margin-bottom: 10px;
+        }
+
+        .step-description {
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.6;
+        }
+
+        /* AI Decision Matrix */
+        .ai-matrix {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .matrix-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 2px solid transparent;
+            border-radius: 20px;
+            padding: 25px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s ease;
+        }
+
+        .matrix-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--primary-gradient);
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+
+        .matrix-card:hover::before {
+            opacity: 0.1;
+        }
+
+        .matrix-card:nth-child(1) { border-image: var(--success-gradient) 1; }
+        .matrix-card:nth-child(2) { border-image: var(--warning-gradient) 1; }
+        .matrix-card:nth-child(3) { border-image: var(--info-gradient) 1; }
+        .matrix-card:nth-child(4) { border-image: var(--accent-gradient) 1; }
+
+        .matrix-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .matrix-title {
+            font-size: 1.1em;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: rgba(255, 255, 255, 0.95);
+        }
+
+        .matrix-percentage {
+            font-size: 2.5em;
+            font-weight: 900;
+            background: linear-gradient(135deg, #00ff87 0%, #60efff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .matrix-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .matrix-fill {
+            height: 100%;
+            border-radius: 10px;
+            animation: fillBar 1.5s ease-out forwards;
+        }
+
+        @keyframes fillBar {
+            from { width: 0; }
+        }
+
+        .matrix-card:nth-child(1) .matrix-fill { 
+            background: var(--success-gradient); 
+            width: 40%;
+        }
+        .matrix-card:nth-child(2) .matrix-fill { 
+            background: var(--warning-gradient); 
+            width: 30%;
+        }
+        .matrix-card:nth-child(3) .matrix-fill { 
+            background: var(--info-gradient); 
+            width: 20%;
+        }
+        .matrix-card:nth-child(4) .matrix-fill { 
+            background: var(--accent-gradient); 
+            width: 10%;
+        }
+
+        .matrix-description {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+
+        /* Database Schema */
+        .schema-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 30px;
+            padding: 40px;
+        }
+
+        .table-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 25px;
+            min-width: 300px;
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .table-card::before {
+            content: '';
+            position: absolute;
+            top: -100%;
+            left: -100%;
+            width: 300%;
+            height: 300%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transform: rotate(45deg);
+            transition: all 0.6s;
+        }
+
+        .table-card:hover::before {
+            animation: shine 0.5s ease-in-out;
+        }
+
+        @keyframes shine {
+            0% { transform: rotate(45deg) translateY(-100%); }
+            100% { transform: rotate(45deg) translateY(100%); }
+        }
+
+        .table-card:hover {
+            transform: translateY(-10px) scale(1.05);
+            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.3);
+            border-color: rgba(102, 126, 234, 0.5);
+        }
+
+        .table-name {
+            font-size: 1.4em;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .field-list {
+            list-style: none;
+        }
+
+        .field-item {
+            padding: 10px;
+            margin-bottom: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .field-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+
+        .field-name {
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 600;
+        }
+
+        .field-type {
+            color: rgba(0, 255, 135, 0.8);
+            font-size: 0.85em;
+            padding: 3px 10px;
+            background: rgba(0, 255, 135, 0.1);
+            border-radius: 20px;
+        }
+
+        .field-key {
+            display: inline-block;
+            padding: 2px 8px;
+            background: var(--warning-gradient);
+            color: white;
+            border-radius: 5px;
+            font-size: 0.7em;
+            margin-left: 10px;
+            font-weight: 700;
+        }
+
+        /* Impact Metrics */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 25px;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s ease;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+        }
+
+        .metric-card:hover {
+            transform: translateY(-10px) scale(1.05);
+            box-shadow: 0 20px 40px rgba(0, 255, 135, 0.3);
+        }
+
+        .metric-icon {
+            font-size: 3em;
+            margin-bottom: 20px;
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .metric-value {
+            font-size: 2.5em;
+            font-weight: 900;
+            background: linear-gradient(135deg, #00ff87 0%, #60efff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .metric-label {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1.1em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* Animated Connection Lines */
+        .connection-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .connection-line {
+            stroke: rgba(0, 255, 135, 0.3);
+            stroke-width: 2;
+            fill: none;
+            stroke-dasharray: 5, 5;
+            animation: dash 20s linear infinite;
+        }
+
+        @keyframes dash {
+            to { stroke-dashoffset: -100; }
+        }
+
+        /* Loading Animation */
+        .loader {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+        }
+
+        .loader.active {
+            display: block;
+        }
+
+        .loader-circle {
+            width: 100px;
+            height: 100px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid;
+            border-image: var(--primary-gradient) 1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .logo { font-size: 2.5em; }
+            .components-grid { grid-template-columns: 1fr; }
+            .flow-step { flex-direction: column; }
+            .step-number { margin-right: 0; margin-bottom: 20px; }
+            .metrics-grid { grid-template-columns: 1fr; }
+        }
+
+        /* Interactive Hover Effects */
+        .interactive-element {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 0.9em;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            z-index: 100;
+        }
+
+        .interactive-element:hover .tooltip {
+            opacity: 1;
+        }
+
+        /* Floating particles */
+        .particle {
+            position: fixed;
+            pointer-events: none;
+            opacity: 0;
+            animation: particleFloat 10s infinite;
+        }
+
+        @keyframes particleFloat {
+            0% {
+                opacity: 0;
+                transform: translateY(100vh) translateX(0) scale(0);
+            }
+            10% {
+                opacity: 1;
+                transform: translateY(80vh) translateX(10px) scale(1);
+            }
+            90% {
+                opacity: 1;
+                transform: translateY(10vh) translateX(-10px) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-100px) translateX(0) scale(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="bg-animation">
+        <span style="left: 10%; width: 60px; height: 60px; animation-delay: 0s;"></span>
+        <span style="left: 20%; width: 20px; height: 20px; animation-delay: 2s;"></span>
+        <span style="left: 30%; width: 40px; height: 40px; animation-delay: 4s;"></span>
+        <span style="left: 40%; width: 80px; height: 80px; animation-delay: 0s; animation-duration: 18s;"></span>
+        <span style="left: 50%; width: 30px; height: 30px; animation-delay: 3s;"></span>
+        <span style="left: 60%; width: 110px; height: 110px; animation-delay: 1s;"></span>
+        <span style="left: 70%; width: 50px; height: 50px; animation-delay: 6s;"></span>
+        <span style="left: 80%; width: 25px; height: 25px; animation-delay: 8s;"></span>
+        <span style="left: 90%; width: 90px; height: 90px; animation-delay: 10s;"></span>
+    </div>
+
+    <!-- Header -->
+    <div class="header">
+        <h1 class="logo">ECOX LABS</h1>
+        <p class="subtitle">AI-Powered Agricultural Waste Management</p>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-container">
+        <button class="nav-btn active" onclick="showDiagram('architecture')">System Architecture</button>
+        <button class="nav-btn" onclick="showDiagram('farmer-flow')">Farmer Flow</button>
+        <button class="nav-btn" onclick="showDiagram('ai-decision')">AI Decision Engine</button>
+        <button class="nav-btn" onclick="showDiagram('database')">Database Schema</button>
+        <button class="nav-btn" onclick="showDiagram('metrics')">Impact Metrics</button>
+        <button class="nav-btn" onclick="showDiagram('tech-stack')">Tech Stack</button>
+    </div>
+
+    <!-- System Architecture Diagram -->
+    <div id="architecture" class="diagram-container active">
+        <div class="system-architecture">
+            <div class="arch-layer">
+                <h2 class="layer-title">🎯 User Entry Layer</h2>
+                <div class="components-grid">
+                    <div class="component-card">
+                        <div class="component-icon">📱</div>
+                        <div class="component-name">App Launch</div>
+                        <div class="component-desc">PWA Initialization</div>
+                    </div>
+                    <div class="component-card">
+                        <div class="component-icon">🌐</div>
+                        <div class="component-name">Language Selection</div>
+                        <div class="component-desc">Hindi/English</div>
+                    </div>
+                    <div class="component-card">
+                        <div class="component-icon">✨</div>
+                        <div class="component-name">Splash Screen</div>
+                        <div class="component-desc">Branding Display</div>
+                    </div>
+                    <div class="component-card">
+                        <div class="component-icon">👤</div>
+                        <div class="component-name">User Type</div>
+                        <div class="component-desc">Farmer/Industry</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="arch-layer">
+                <h2 class="layer-title">🌾 Farmer Journey</h2>
+                <div class="components-grid">
+                    <div class="component-card">
+                        <div class="component-icon">🔐</div>
+                        <div class="component-name">Authentication</div>
+                        <div class="component-desc">Secure Login</div>
+                    </div>
+                    <div class="component-card">
+                        <div class="component-icon">📊</div>
+                        <div class="component-name">Dashboard</div>
+                        <div class="component-desc">Personal Hub</div>
+                    </div>
+                    <div class="component-card">
+                        <div class="component-icon">📷</div>
+                        <div class="component-name">Waste Capture</div>
+                        <div class="component-desc">Photo & Details</div>
+                    </div>
+                    <div class="component-card">
+                        <div class="component-icon">📍</div>
+                        <div class="component-name">GPS Location</div>
+                        <div class="component-desc">Auto-capture</div>
+                    </div>
+                    <div class="component-card">
+                        <div class="component-icon">📝</div>
+                        <div class="component-name">Form Submission</div>
+                        <div class="component-desc">Type & Quantity</div>
+                    </div>
+                    <div class="component-card">
+                        <div class="component-icon">📜</div>
+                        <div class="component-name">History View</div>
+                        <div class="component-desc">Past Submissions</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="arch-layer">
+                <h2 class="layer-title">🤖 AI Matching Engine</h2>
+                <div class="components-grid">
+                    <div class="component-card">
+                        <div class="component-icon">⚡</div>
+                        <div class="component-name">Cloud Function</div>
+                        <div class="component-desc">Auto Trigger</div>
+                    </div>
+                    <div class="component-card">
+                        <div class="component-icon">🏭</div>
+                        <div class="component-name">Industry Fetch</div>
+                        <div class="component-desc">Active Buyers</div>
+                    </div>
+                    <div class="component-card">
+                        <div class="component-icon">📐</div>
+                        <div class="component-name">Distance Calc</div>
+                        <div class="component-desc">Haversine Formula</div>
+                    </div>
+                    <div class="component-card">
+                        <div class="component-icon">🧠</div>
+                        <div class="component-name">Gemini 2.0</div>
+                        <div class="component-desc">AI Analysis</div>
+                    </div>
+                    <div class="component-card">
+                        <div class="component-icon">🎯</div>
+                        <div class="component-name">Match Decision</div>
+                        <div class="component-desc">Optimal Selection</div>
+                    </div>
+                    <div class="component-card">
+                        <div class="component-icon">💡</div>
+                        <div class="component-name">Reasoning Gen</div>
+                        <div class="component-desc">Explainable AI</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="arch-layer">
+                <h2 class="layer-title">🏢 Industry Dashboard</h2>
+                <div class="components-grid">
+                    <div class="component-card">
+                        <div class="component-icon">🔔</div>
+                        <div class="component-name">Real-time Updates</div>
+                        <div class="component-desc">Live Matches</div>
+                    </div>
+                    <div class="component-card">
+                        <div class="component-icon">📋</div>
+                        <div class="component-name">Match Details</div>
+                        <div class="component-desc">Complete Info</div>
+                    </div>
+                    <div class="component-card">
+                        <div class="component-icon">✅</div>
+                        <div class="component-name">Accept/Reject</div>
+                        <div class="component-desc">Quick Actions</div>
+                    </div>
+                    <div class="component-card">
+                        <div class="component-icon">📈</div>
+                        <div class="component-name">Impact Metrics</div>
+                        <div class="component-desc">Environmental Stats</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Farmer Flow Diagram -->
+    <div id="farmer-flow" class="diagram-container">
+        <div class="flow-diagram">
+            <h2 class="layer-title" style="text-align: center; margin-bottom: 40px;">🌾 Farmer Waste Submission Journey</h2>
+            
+            <div class="flow-step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <div class="step-title">Navigate to "Log Waste"</div>
+                    <div class="step-description">Farmer opens the PWA app and clicks on the prominent "Log Waste" button from their personalized dashboard.</div>
+                </div>
+            </div>
+
+            <div class="flow-step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <div class="step-title">Capture Waste Photo</div>
+                    <div class="step-description">Camera interface opens automatically. Farmer takes a clear photo of agricultural waste (max 5MB) which gets uploaded to Firebase Storage.</div>
+                </div>
+            </div>
+
+            <div class="flow-step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <div class="step-title">Auto-Capture GPS Location</div>
+                    <div class="step-description">App automatically captures precise GPS coordinates using device location API for accurate distance calculations.</div>
+                </div>
+            </div>
+
+            <div class="flow-step">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <div class="step-title">Fill Waste Details Form</div>
+                    <div class="step-description">Select waste type (Rice Straw/Wheat Residue), enter quantity in kg, moisture level %, and current season (Rabi/Kharif/Zaid).</div>
+                </div>
+            </div>
+
+            <div class="flow-step">
+                <div class="step-number">5</div>
+                <div class="step-content">
+                    <div class="step-title">AI Matching Triggered</div>
+                    <div class="step-description">Cloud Function automatically triggers, AI analyzes data, finds optimal industry match in 2-5 seconds, and displays success screen with match details and environmental impact.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Decision Engine -->
+    <div id="ai-decision" class="diagram-container">
+        <div class="flow-diagram">
+            <h2 class="layer-title" style="text-align: center; margin-bottom: 40px;">🧠 AI Decision-Making Process</h2>
+            
+            <div class="ai-matrix">
+                <div class="matrix-card">
+                    <div class="matrix-title">🎯 Waste Type Compatibility</div>
+                    <div class="matrix-percentage">40%</div>
+                    <div class="matrix-bar">
+                        <div class="matrix-fill"></div>
+                    </div>
+                    <div class="matrix-description">
+                        Analyzes exact match between farmer's waste type and industry demand. Rice straw for biogas plants, wheat residue for animal feed, etc.
+                    </div>
+                </div>
+
+                <div class="matrix-card">
+                    <div class="matrix-title">📍 Proximity Logistics</div>
+                    <div class="matrix-percentage">30%</div>
+                    <div class="matrix-bar">
+                        <div class="matrix-fill"></div>
+                    </div>
+                    <div class="matrix-description">
+                        Calculates transportation efficiency using Haversine formula. Prioritizes matches within 15km for optimal logistics and reduced carbon footprint.
+                    </div>
+                </div>
+
+                <div class="matrix-card">
+                    <div class="matrix-title">📊 Demand Capacity Fit</div>
+                    <div class="matrix-percentage">20%</div>
+                    <div class="matrix-bar">
+                        <div class="matrix-fill"></div>
+                    </div>
+                    <div class="matrix-description">
+                        Evaluates if industry can handle the waste quantity. Checks current capacity, processing capabilities, and demand urgency.
+                    </div>
+                </div>
+
+                <div class="matrix-card">
+                    <div class="matrix-title">💰 Price Optimization</div>
+                    <div class="matrix-percentage">10%</div>
+                    <div class="matrix-bar">
+                        <div class="matrix-fill"></div>
+                    </div>
+                    <div class="matrix-description">
+                        Ensures fair pricing for farmers while maintaining industry profitability. Factors in market rates and transportation costs.
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 50px; text-align: center;">
+                <h3 style="color: rgba(255, 255, 255, 0.9); margin-bottom: 20px;">Gemini 2.0 Flash Thinking Process</h3>
+                <p style="color: rgba(255, 255, 255, 0.7); line-height: 1.8; max-width: 800px; margin: 0 auto;">
+                    The AI agent processes all factors simultaneously, generating a match score (0-100) for each potential industry. 
+                    The highest scoring match is selected with explainable reasoning provided to both farmer and industry.
+                    Average decision time: <span style="color: #00ff87; font-weight: bold;">2-5 seconds</span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Database Schema -->
+    <div id="database" class="diagram-container">
+        <h2 class="layer-title" style="text-align: center; margin-bottom: 40px;">🗄️ Database Architecture</h2>
+        <div class="schema-container">
+            <div class="table-card">
+                <h3 class="table-name">FARMERS</h3>
+                <ul class="field-list">
+                    <li class="field-item">
+                        <span class="field-name">id <span class="field-key">PK</span></span>
+                        <span class="field-type">string</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-name">name</span>
+                        <span class="field-type">string</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-name">phone</span>
+                        <span class="field-type">string</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-name">location</span>
+                        <span class="field-type">object</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-name">farm_size_acres</span>
+                        <span class="field-type">number</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-name">primary_crops</span>
+                        <span class="field-type">array</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-name">created_at</span>
+                        <span class="field-type">timestamp</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="table-card">
+                <h3 class="table-name">WASTE_BATCHES</h3>
+                <ul class="field-list">
+                    <li class="field-item">
+                        <span class="field-name">id <span class="field-key">PK</span></span>
+                        <span class="field-type">string</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-name">farmer_id <span class="field-key">FK</span></span>
+                        <span class="field-type">string</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-name">waste_type</span>
+                        <span class="field-type">string</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-name">quantity_kg</span>
+                        <span class="field-type">number</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-name">photo_url</span>
+                        <span class="field-type">string</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-name">location</span>
+                        <span class="field-type">object</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-name">status</span>
+                        <span class="field-type">string</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="table-card">
+                <h3 class="table-name">AI_MATCHES</h3>
+                <ul class="field-list">
+                    <li class="field-item">
+                        <span class="field-name">id <span class="field-key">PK</span></span>
+                        <span class="field-type">string</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-name">waste_batch_id <span class="field-key">FK</span></span>
+                        <span class="field-type">string</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-name">industry_id <span class="field-key">FK</span></span>
+                        <span class="field-type">string</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-name">match_score</span>
+                        <span class="field-type">number</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-name">reasoning</span>
+                        <span class="field-type">string</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-name">price_per_kg</span>
+                        <span class="field-type">number</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-name">status</span>
+                        <span class="field-type">string</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="table-card">
+                <h3 class="table-name">INDUSTRIES</h3>
+                <ul class="field-list">
+                    <li class="field-item">
+                        <span class="field-name">id <span class="field-key">PK</span></span>
+                        <span class="field-type">string</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-name">name</span>
+                        <span class="field-type">string</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-name">type</span>
+                        <span class="field-type">string</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-name">location</span>
+                        <span class="field-type">object</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-name">demand_kg</span>
+                        <span class="field-type">number</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-name">price_range</span>
+                        <span class="field-type">object</span>
+                    </li>
+                    <li class="field-item">
+                        <span class="field-name">is_active</span>
+                        <span class="field-type">boolean</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Impact Metrics -->
+    <div id="metrics" class="diagram-container">
+        <h2 class="layer-title" style="text-align: center; margin-bottom: 40px;">🌍 Environmental Impact Dashboard</h2>
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-icon">🌱</div>
+                <div class="metric-value">2.0</div>
+                <div class="metric-label">Tons CO₂ Saved</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon">💨</div>
+                <div class="metric-value">75</div>
+                <div class="metric-label">KG PM2.5 Prevented</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon">💰</div>
+                <div class="metric-value">₹1,600</div>
+                <div class="metric-label">Farmer Earnings</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon">♻️</div>
+                <div class="metric-value">500</div>
+                <div class="metric-label">KG Waste Diverted</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon">⚡</div>
+                <div class="metric-value">2-5s</div>
+                <div class="metric-label">AI Decision Time</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon">🎯</div>
+                <div class="metric-value">91%</div>
+                <div class="metric-label">Match Accuracy</div>
+            </div>
+        </div>
+
+        <div style="margin-top: 50px; text-align: center;">
+            <h3 style="color: rgba(255, 255, 255, 0.9); margin-bottom: 20px;">Impact Calculation Formula</h3>
+            <div style="display: flex; justify-content: center; gap: 30px; flex-wrap: wrap; margin-top: 30px;">
+                <div style="background: rgba(255, 255, 255, 0.05); padding: 20px; border-radius: 15px; backdrop-filter: blur(10px);">
+                    <p style="color: #00ff87; font-weight: bold; margin-bottom: 10px;">CO₂ Saved</p>
+                    <p style="color: rgba(255, 255, 255, 0.8);">wasteKg × 4 = CO₂ tons</p>
+                </div>
+                <div style="background: rgba(255, 255, 255, 0.05); padding: 20px; border-radius: 15px; backdrop-filter: blur(10px);">
+                    <p style="color: #60efff; font-weight: bold; margin-bottom: 10px;">PM2.5 Prevented</p>
+                    <p style="color: rgba(255, 255, 255, 0.8);">wasteKg × 0.15 = PM2.5 kg</p>
+                </div>
+                <div style="background: rgba(255, 255, 255, 0.05); padding: 20px; border-radius: 15px; backdrop-filter: blur(10px);">
+                    <p style="color: #764ba2; font-weight: bold; margin-bottom: 10px;">Farmer Earnings</p>
+                    <p style="color: rgba(255, 255, 255, 0.8);">wasteKg × ₹/kg = Total ₹</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tech Stack -->
+    <div id="tech-stack" class="diagram-container">
+        <div class="system-architecture">
+            <div class="arch-layer">
+                <h2 class="layer-title">🎨 Frontend Technologies</h2>
+                <div class="components-grid">
+                    <div class="component-card">
+                        <div class="component-icon">⚛️</div>
+                        <div class="component-name">Next.js 15</div>
+                        <div class="component-desc">React Framework</div>
+                    </div>
+                    <div class="component-card">
+                        <div class="component-icon">💙</div>
+                        <div class="component-name">TypeScript</div>
+                        <div class="component-desc">Type Safety</div>
+                    </div>
+                    <div class="component-card">
+                        <div class="component-icon">🎨</div>
+                        <div class="component-name">Tailwind CSS</div>
+                        <div class="component-desc">Utility Styling</div>
+                    </div>
+                    <div class="component-card">
+                        <div class="component-icon">📱</div>
+                        <div class="component-name">PWA</div>
+                        <div class="component-desc">Mobile-First</div>
+                    </div>
+                    <div class="component-card">
+                        <div class="component-icon">📋</div>
+                        <div class="component-name">React Hook Form</div>
+                        <div class="component-desc">Form Management</div>
+                    </div>
+                    <div class="component-card">
+                        <div class="component-icon">✅</div>
+                        <div class="component-name">Zod</div>
+                        <div class="component-desc">Schema Validation</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="arch-layer">
+                <h2 class="layer-title">⚡ Backend Technologies</h2>
+                <div class="components-grid">
+                    <div class="component-card">
+                        <div class="component-icon">🔥</div>
+                        <div class="component-name">Firebase Functions</div>
+                        <div class="component-desc">Serverless</div>
+                    </div>
+                    <div class="component-card">
+                        <div class="component-icon">🧠</div>
+                        <div class="component-name">Gemini 2.0</div>
+                        <div class="component-desc">AI Engine</div>
+                    </div>
+                    <div class="component-card">
+                        <div class="component-icon">📐</div>
+                        <div class="component-name">Haversine</div>
+                        <div class="component-desc">Distance Calc</div>
+                    </div>
+                    <div class="component-card">
+                        <div class="component-icon">🗄️</div>
+                        <div class="component-name">Firestore</div>
+                        <div class="component-desc">NoSQL Database</div>
+                    </div>
+                    <div class="component-card">
+                        <div class="component-icon">💾</div>
+                        <div class="component-name">Firebase Storage</div>
+                        <div class="component-desc">Media Storage</div>
+                    </div>
+                    <div class="component-card">
+                        <div class="component-icon">🔔</div>
+                        <div class="component-name">Real-time Sync</div>
+                        <div class="component-desc">WebSocket</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="arch-layer">
+                <h2 class="layer-title">🚀 Deployment & DevOps</h2>
+                <div class="components-grid">
+                    <div class="component-card">
+                        <div class="component-icon">▲</div>
+                        <div class="component-name">Vercel</div>
+                        <div class="component-desc">Frontend CDN</div>
+                    </div>
+                    <div class="component-card">
+                        <div class="component-icon">☁️</div>
+                        <div class="component-name">Firebase Hosting</div>
+                        <div class="component-desc">Backend Deploy</div>
+                    </div>
+                    <div class="component-card">
+                        <div class="component-icon">🌐</div>
+                        <div class="component-name">Edge Functions</div>
+                        <div class="component-desc">Global Scale</div>
+                    </div>
+                    <div class="component-card">
+                        <div class="component-icon">📊</div>
+                        <div class="component-name">Analytics</div>
+                        <div class="component-desc">Performance</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Particles -->
+    <div class="particle" style="left: 10%; animation-delay: 0s; color: #00ff87;">✨</div>
+    <div class="particle" style="left: 30%; animation-delay: 2s; color: #60efff;">🌟</div>
+    <div class="particle" style="left: 50%; animation-delay: 4s; color: #764ba2;">💫</div>
+    <div class="particle" style="left: 70%; animation-delay: 6s; color: #fee140;">⭐</div>
+    <div class="particle" style="left: 90%; animation-delay: 8s; color: #00ff87;">✨</div>
+
+    <script>
+        // Navigation functionality
+        function showDiagram(diagramId) {
+            // Hide all diagrams
+            document.querySelectorAll('.diagram-container').forEach(container => {
+                container.classList.remove('active');
+            });
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected diagram
+            document.getElementById(diagramId).classList.add('active');
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+        }
+
+        // Add interactive hover effects
+        document.querySelectorAll('.component-card, .matrix-card, .metric-card').forEach(card => {
+            card.addEventListener('mouseenter', function(e) {
+                const rect = this.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                this.style.setProperty('--mouse-x', `${x}px`);
+                this.style.setProperty('--mouse-y', `${y}px`);
+            });
+        });
+
+        // Animate numbers on scroll
+        function animateValue(element, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                element.textContent = Math.floor(progress * (end - start) + start);
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        // Intersection Observer for animations
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.animation = entry.target.style.animation || 'fadeInUp 0.8s ease-out forwards';
+                }
+            });
+        }, { threshold: 0.1 });
+
+        // Observe all animated elements
+        document.querySelectorAll('.flow-step, .matrix-card, .metric-card, .table-card').forEach(el => {
+            observer.observe(el);
+        });
+
+        // Dynamic background particles
+        function createParticle() {
+            const particle = document.createElement('span');
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.width = Math.random() * 60 + 20 + 'px';
+            particle.style.height = particle.style.width;
+            particle.style.animationDelay = Math.random() * 20 + 's';
+            particle.style.animationDuration = Math.random() * 20 + 15 + 's';
+            document.querySelector('.bg-animation').appendChild(particle);
+            
+            setTimeout(() => {
+                particle.remove();
+            }, 35000);
+        }
+
+        // Create particles periodically
+        setInterval(createParticle, 3000);
+
+        // Add smooth scroll behavior
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        // Add loading effect
+        window.addEventListener('load', () => {
+            document.body.style.opacity = '0';
+            setTimeout(() => {
+                document.body.style.transition = 'opacity 1s ease-in';
+                document.body.style.opacity = '1';
+            }, 100);
+        });
+
+        // Interactive sound effects (optional)
+        function playHoverSound() {
+            // Add subtle sound effects if needed
+            console.log('Hover effect triggered');
+        }
+
+        // Add keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+                const buttons = Array.from(document.querySelectorAll('.nav-btn'));
+                const activeIndex = buttons.findIndex(btn => btn.classList.contains('active'));
+                let newIndex = activeIndex;
+                
+                if (e.key === 'ArrowRight') {
+                    newIndex = (activeIndex + 1) % buttons.length;
+                } else {
+                    newIndex = (activeIndex - 1 + buttons.length) % buttons.length;
+                }
+                
+                buttons[newIndex].click();
+            }
+        });
+
+        // Add touch swipe support for mobile
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+
+        document.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        });
+
+        function handleSwipe() {
+            const swipeThreshold = 50;
+            const diff = touchStartX - touchEndX;
+            
+            if (Math.abs(diff) > swipeThreshold) {
+                const buttons = Array.from(document.querySelectorAll('.nav-btn'));
+                const activeIndex = buttons.findIndex(btn => btn.classList.contains('active'));
+                let newIndex = activeIndex;
+                
+                if (diff > 0) { // Swipe left
+                    newIndex = (activeIndex + 1) % buttons.length;
+                } else { // Swipe right
+                    newIndex = (activeIndex - 1 + buttons.length) % buttons.length;
+                }
+                
+                buttons[newIndex].click();
+            }
+        }
+
+        console.log('ECOX Labs Visual Dashboard Loaded Successfully!');
+    </script>
+</body>
+</html>

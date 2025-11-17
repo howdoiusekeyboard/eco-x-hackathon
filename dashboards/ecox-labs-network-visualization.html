@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECOX Labs - Interactive Flow Visualization</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --neon-green: #00ff88;
+            --neon-blue: #00d4ff;
+            --neon-purple: #9945ff;
+            --neon-pink: #ff00ff;
+            --dark-bg: #0a0a0a;
+            --glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--dark-bg);
+            color: white;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Animated gradient background */
+        .animated-bg {
+            position: fixed;
+            width: 200%;
+            height: 200%;
+            top: -50%;
+            left: -50%;
+            z-index: -1;
+            background: radial-gradient(ellipse at center, 
+                rgba(0, 255, 136, 0.1) 0%,
+                rgba(0, 212, 255, 0.05) 25%,
+                rgba(153, 69, 255, 0.05) 50%,
+                transparent 70%);
+            animation: rotateGradient 20s linear infinite;
+        }
+
+        @keyframes rotateGradient {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Grid overlay effect */
+        .grid-overlay {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            background-image: 
+                linear-gradient(rgba(0, 255, 136, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 136, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 10s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        /* Glowing header */
+        .header {
+            text-align: center;
+            padding: 60px 20px 40px;
+            position: relative;
+        }
+
+        .main-title {
+            font-size: 5em;
+            font-weight: 900;
+            letter-spacing: -2px;
+            background: linear-gradient(45deg, var(--neon-green), var(--neon-blue), var(--neon-purple));
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradientShift 3s ease infinite;
+            filter: drop-shadow(0 0 30px rgba(0, 255, 136, 0.5));
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .tagline {
+            margin-top: 20px;
+            font-size: 1.3em;
+            color: rgba(255, 255, 255, 0.6);
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            font-weight: 300;
+        }
+
+        /* Tab navigation */
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            padding: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 15px 35px;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            color: rgba(255, 255, 255, 0.8);
+            border-radius: 100px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+            font-weight: 600;
+            font-size: 0.95em;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tab-btn::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: -100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 136, 0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .tab-btn:hover::before {
+            left: 100%;
+        }
+
+        .tab-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(0, 255, 136, 0.3);
+            border-color: var(--neon-green);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.2), rgba(0, 212, 255, 0.2));
+            border-color: var(--neon-green);
+            color: white;
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.4);
+        }
+
+        /* Content sections */
+        .content-section {
+            display: none;
+            padding: 40px 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* SVG Flow Diagram */
+        .svg-container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 30px;
+            padding: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .svg-container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at center, 
+                rgba(0, 255, 136, 0.05) 0%, 
+                transparent 50%);
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 1; }
+        }
+
+        svg {
+            width: 100%;
+            height: auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Network nodes and connections */
+        .node {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .node:hover {
+            filter: brightness(1.3) drop-shadow(0 0 20px currentColor);
+        }
+
+        .node-circle {
+            fill: url(#nodeGradient);
+            stroke: var(--neon-green);
+            stroke-width: 2;
+            filter: drop-shadow(0 0 10px rgba(0, 255, 136, 0.5));
+            animation: nodePulse 3s ease-in-out infinite;
+        }
+
+        @keyframes nodePulse {
+            0%, 100% { r: 30; }
+            50% { r: 35; }
+        }
+
+        .node-text {
+            fill: white;
+            font-size: 14px;
+            font-weight: 600;
+            text-anchor: middle;
+            dominant-baseline: central;
+            pointer-events: none;
+        }
+
+        .connection {
+            stroke: url(#connectionGradient);
+            stroke-width: 2;
+            fill: none;
+            stroke-dasharray: 5, 5;
+            animation: flowAnimation 2s linear infinite;
+        }
+
+        @keyframes flowAnimation {
+            to { stroke-dashoffset: -10; }
+        }
+
+        /* Glass cards */
+        .glass-card {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, 
+                transparent, 
+                var(--neon-green), 
+                var(--neon-blue), 
+                transparent);
+            animation: borderGlow 3s linear infinite;
+        }
+
+        @keyframes borderGlow {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 255, 136, 0.2);
+            border-color: rgba(0, 255, 136, 0.3);
+        }
+
+        .card-title {
+            font-size: 1.8em;
+            font-weight: 700;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, var(--neon-green), var(--neon-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .card-icon {
+            font-size: 1.2em;
+            filter: drop-shadow(0 0 10px currentColor);
+        }
+
+        /* Process flow visualization */
+        .process-flow {
+            display: grid;
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .process-step {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 30px;
+            align-items: center;
+            opacity: 0;
+            animation: slideInLeft 0.8s ease forwards;
+        }
+
+        .process-step:nth-child(1) { animation-delay: 0.1s; }
+        .process-step:nth-child(2) { animation-delay: 0.2s; }
+        .process-step:nth-child(3) { animation-delay: 0.3s; }
+        .process-step:nth-child(4) { animation-delay: 0.4s; }
+        .process-step:nth-child(5) { animation-delay: 0.5s; }
+
+        @keyframes slideInLeft {
+            from { 
+                opacity: 0; 
+                transform: translateX(-50px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateX(0); 
+            }
+        }
+
+        .step-indicator {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--neon-green), var(--neon-blue));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            font-weight: 700;
+            color: var(--dark-bg);
+            position: relative;
+            box-shadow: 0 0 40px rgba(0, 255, 136, 0.5);
+        }
+
+        .step-indicator::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 2px solid var(--neon-green);
+            animation: ripple 2s linear infinite;
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1.5);
+                opacity: 0;
+            }
+        }
+
+        .step-content {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 15px;
+            padding: 25px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .step-content::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            bottom: 0;
+            left: 0;
+            background: linear-gradient(90deg, 
+                var(--neon-green) 0%, 
+                var(--neon-blue) 50%, 
+                var(--neon-purple) 100%);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.5s ease;
+        }
+
+        .step-content:hover::after {
+            transform: scaleX(1);
+        }
+
+        .step-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: var(--neon-green);
+            margin-bottom: 10px;
+        }
+
+        .step-description {
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.6;
+        }
+
+        /* Data visualization cards */
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .data-card {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .data-card::before {
+            content: '';
+            position: absolute;
+            width: 150%;
+            height: 150%;
+            background: radial-gradient(circle at center, 
+                rgba(0, 255, 136, 0.1) 0%, 
+                transparent 50%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(0deg);
+            transition: transform 0.5s ease;
+        }
+
+        .data-card:hover::before {
+            transform: translate(-50%, -50%) rotate(180deg);
+        }
+
+        .data-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0, 255, 136, 0.3);
+            border-color: var(--neon-green);
+        }
+
+        .data-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, var(--neon-green), var(--neon-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 20px rgba(0, 255, 136, 0.5));
+            animation: iconFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes iconFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .data-value {
+            font-size: 3em;
+            font-weight: 900;
+            color: white;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+        }
+
+        .data-label {
+            font-size: 1.1em;
+            color: rgba(255, 255, 255, 0.7);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* Progress bars */
+        .progress-container {
+            margin-top: 30px;
+        }
+
+        .progress-item {
+            margin-bottom: 25px;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .progress-label {
+            color: var(--neon-green);
+            font-weight: 600;
+        }
+
+        .progress-value {
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 700;
+        }
+
+        .progress-bar {
+            height: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--neon-green), var(--neon-blue));
+            border-radius: 50px;
+            position: relative;
+            animation: fillProgress 1.5s ease-out forwards;
+        }
+
+        @keyframes fillProgress {
+            from { width: 0; }
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, 
+                transparent, 
+                rgba(255, 255, 255, 0.3), 
+                transparent);
+            animation: shimmer 2s linear infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        /* Tech stack hexagons */
+        .hex-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 40px;
+        }
+
+        .hex-item {
+            width: 120px;
+            height: 140px;
+            position: relative;
+            margin: 20px;
+            cursor: pointer;
+        }
+
+        .hexagon {
+            width: 100%;
+            height: 100%;
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border: 2px solid var(--glass-border);
+            position: relative;
+            clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hexagon:hover {
+            background: linear-gradient(135deg, 
+                rgba(0, 255, 136, 0.2), 
+                rgba(0, 212, 255, 0.2));
+            transform: scale(1.1);
+            border-color: var(--neon-green);
+            filter: drop-shadow(0 0 30px rgba(0, 255, 136, 0.5));
+        }
+
+        .hex-icon {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .hex-label {
+            font-size: 0.85em;
+            font-weight: 600;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        /* Interactive tooltips */
+        .tooltip {
+            position: fixed;
+            background: rgba(0, 0, 0, 0.95);
+            border: 1px solid var(--neon-green);
+            border-radius: 10px;
+            padding: 15px;
+            color: white;
+            font-size: 0.9em;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 1000;
+            max-width: 300px;
+            box-shadow: 0 10px 30px rgba(0, 255, 136, 0.3);
+        }
+
+        .tooltip.active {
+            opacity: 1;
+        }
+
+        /* Floating orbs */
+        .orb {
+            position: fixed;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.3;
+            pointer-events: none;
+            animation: orbFloat 20s ease-in-out infinite;
+        }
+
+        .orb1 {
+            background: var(--neon-green);
+            top: 10%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .orb2 {
+            background: var(--neon-blue);
+            top: 60%;
+            right: 10%;
+            animation-delay: 5s;
+        }
+
+        .orb3 {
+            background: var(--neon-purple);
+            bottom: 10%;
+            left: 30%;
+            animation-delay: 10s;
+        }
+
+        @keyframes orbFloat {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(50px, -50px); }
+            50% { transform: translate(-50px, 50px); }
+            75% { transform: translate(-30px, -30px); }
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .main-title { font-size: 3em; }
+            .process-step { grid-template-columns: 1fr; }
+            .step-indicator { 
+                width: 60px; 
+                height: 60px; 
+                font-size: 1.5em; 
+            }
+            .data-grid { grid-template-columns: 1fr; }
+            .hex-item { 
+                width: 100px; 
+                height: 115px; 
+                margin: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background effects -->
+    <div class="animated-bg"></div>
+    <div class="grid-overlay"></div>
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <div class="orb orb3"></div>
+
+    <!-- Header -->
+    <header class="header">
+        <h1 class="main-title">ECOX LABS</h1>
+        <p class="tagline">Next-Gen Agricultural Waste Management</p>
+    </header>
+
+    <!-- Navigation tabs -->
+    <nav class="tabs">
+        <button class="tab-btn active" onclick="switchTab('network')">Network Flow</button>
+        <button class="tab-btn" onclick="switchTab('process')">Process Journey</button>
+        <button class="tab-btn" onclick="switchTab('ai-engine')">AI Engine</button>
+        <button class="tab-btn" onclick="switchTab('metrics')">Live Metrics</button>
+        <button class="tab-btn" onclick="switchTab('tech')">Tech Stack</button>
+    </nav>
+
+    <!-- Network Flow Section -->
+    <section id="network" class="content-section active">
+        <div class="svg-container">
+            <svg viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
+                <!-- Define gradients -->
+                <defs>
+                    <linearGradient id="nodeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#00ff88;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#00d4ff;stop-opacity:1" />
+                    </linearGradient>
+                    <linearGradient id="connectionGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color:#00ff88;stop-opacity:0.3" />
+                        <stop offset="50%" style="stop-color:#00d4ff;stop-opacity:0.5" />
+                        <stop offset="100%" style="stop-color:#9945ff;stop-opacity:0.3" />
+                    </linearGradient>
+                    <filter id="glow">
+                        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                        <feMerge>
+                            <feMergeNode in="coloredBlur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                </defs>
+
+                <!-- Connections -->
+                <path class="connection" d="M 150 100 Q 250 150 350 100" />
+                <path class="connection" d="M 150 100 Q 250 200 350 250" />
+                <path class="connection" d="M 150 100 Q 250 250 350 400" />
+                <path class="connection" d="M 350 100 Q 450 150 550 100" />
+                <path class="connection" d="M 350 250 Q 450 200 550 250" />
+                <path class="connection" d="M 350 400 Q 450 350 550 400" />
+                <path class="connection" d="M 550 100 Q 600 200 650 300" />
+                <path class="connection" d="M 550 250 Q 600 250 650 300" />
+                <path class="connection" d="M 550 400 Q 600 350 650 300" />
+
+                <!-- Nodes -->
+                <g class="node" transform="translate(150, 100)">
+                    <circle class="node-circle" r="35" filter="url(#glow)" />
+                    <text class="node-text">🌾</text>
+                </g>
+                <text x="150" y="150" class="node-text" style="font-size: 12px;">Farmer</text>
+
+                <g class="node" transform="translate(350, 100)">
+                    <circle class="node-circle" r="30" filter="url(#glow)" />
+                    <text class="node-text">📷</text>
+                </g>
+                <text x="350" y="145" class="node-text" style="font-size: 12px;">Capture</text>
+
+                <g class="node" transform="translate(350, 250)">
+                    <circle class="node-circle" r="30" filter="url(#glow)" />
+                    <text class="node-text">📍</text>
+                </g>
+                <text x="350" y="295" class="node-text" style="font-size: 12px;">Location</text>
+
+                <g class="node" transform="translate(350, 400)">
+                    <circle class="node-circle" r="30" filter="url(#glow)" />
+                    <text class="node-text">📝</text>
+                </g>
+                <text x="350" y="445" class="node-text" style="font-size: 12px;">Details</text>
+
+                <g class="node" transform="translate(550, 100)">
+                    <circle class="node-circle" r="30" filter="url(#glow)" />
+                    <text class="node-text">☁️</text>
+                </g>
+                <text x="550" y="145" class="node-text" style="font-size: 12px;">Cloud</text>
+
+                <g class="node" transform="translate(550, 250)">
+                    <circle class="node-circle" r="35" filter="url(#glow)" />
+                    <text class="node-text">🤖</text>
+                </g>
+                <text x="550" y="300" class="node-text" style="font-size: 12px;">AI Engine</text>
+
+                <g class="node" transform="translate(550, 400)">
+                    <circle class="node-circle" r="30" filter="url(#glow)" />
+                    <text class="node-text">🗄️</text>
+                </g>
+                <text x="550" y="445" class="node-text" style="font-size: 12px;">Database</text>
+
+                <g class="node" transform="translate(650, 300)">
+                    <circle class="node-circle" r="35" filter="url(#glow)" />
+                    <text class="node-text">🏭</text>
+                </g>
+                <text x="650" y="350" class="node-text" style="font-size: 12px;">Industry</text>
+
+                <!-- Animated data packets -->
+                <circle r="5" fill="#00ff88" opacity="0.8">
+                    <animateMotion dur="3s" repeatCount="indefinite">
+                        <mpath href="#connection" />
+                    </animateMotion>
+                </circle>
+            </svg>
+        </div>
+
+        <div class="glass-card">
+            <h2 class="card-title">
+                <span class="card-icon">🔄</span>
+                Real-time Data Flow Architecture
+            </h2>
+            <p style="color: rgba(255, 255, 255, 0.8); line-height: 1.8;">
+                The ECOX Labs platform utilizes a sophisticated event-driven architecture where each node represents a critical 
+                system component. Data flows seamlessly from farmer input through AI processing to industry matching, 
+                with real-time synchronization powered by Firebase's WebSocket connections.
+            </p>
+        </div>
+    </section>
+
+    <!-- Process Journey Section -->
+    <section id="process" class="content-section">
+        <div class="glass-card">
+            <h2 class="card-title">
+                <span class="card-icon">🚀</span>
+                Farmer Waste Submission Journey
+            </h2>
+        </div>
+
+        <div class="process-flow">
+            <div class="process-step">
+                <div class="step-indicator">01</div>
+                <div class="step-content">
+                    <h3 class="step-title">App Launch & Authentication</h3>
+                    <p class="step-description">
+                        Farmer opens the PWA application, selects language preference (Hindi/English), 
+                        and logs in securely using phone number authentication via Firebase Auth.
+                    </p>
+                </div>
+            </div>
+
+            <div class="process-step">
+                <div class="step-indicator">02</div>
+                <div class="step-content">
+                    <h3 class="step-title">Waste Documentation</h3>
+                    <p class="step-description">
+                        Camera interface captures high-quality waste photos (max 5MB), automatically 
+                        uploads to Firebase Storage, and returns a secure URL for processing.
+                    </p>
+                </div>
+            </div>
+
+            <div class="process-step">
+                <div class="step-indicator">03</div>
+                <div class="step-content">
+                    <h3 class="step-title">Location & Details</h3>
+                    <p class="step-description">
+                        GPS coordinates are auto-captured for precise location mapping. Farmer inputs 
+                        waste type, quantity (kg), moisture level (%), and current agricultural season.
+                    </p>
+                </div>
+            </div>
+
+            <div class="process-step">
+                <div class="step-indicator">04</div>
+                <div class="step-content">
+                    <h3 class="step-title">AI Processing</h3>
+                    <p class="step-description">
+                        Cloud Function triggers automatically, Gemini 2.0 Flash analyzes data across 
+                        multiple parameters, calculates optimal match scores in 2-5 seconds.
+                    </p>
+                </div>
+            </div>
+
+            <div class="process-step">
+                <div class="step-indicator">05</div>
+                <div class="step-content">
+                    <h3 class="step-title">Match Confirmation</h3>
+                    <p class="step-description">
+                        Success screen displays matched industry, estimated earnings, environmental 
+                        impact metrics (CO₂ saved, PM2.5 prevented), and next steps for collection.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- AI Engine Section -->
+    <section id="ai-engine" class="content-section">
+        <div class="glass-card">
+            <h2 class="card-title">
+                <span class="card-icon">🧠</span>
+                Gemini 2.0 Flash Decision Matrix
+            </h2>
+        </div>
+
+        <div class="progress-container">
+            <div class="progress-item">
+                <div class="progress-header">
+                    <span class="progress-label">Waste Type Compatibility</span>
+                    <span class="progress-value">40%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 40%;"></div>
+                </div>
+            </div>
+
+            <div class="progress-item">
+                <div class="progress-header">
+                    <span class="progress-label">Proximity Logistics</span>
+                    <span class="progress-value">30%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 30%;"></div>
+                </div>
+            </div>
+
+            <div class="progress-item">
+                <div class="progress-header">
+                    <span class="progress-label">Demand Capacity Fit</span>
+                    <span class="progress-value">20%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 20%;"></div>
+                </div>
+            </div>
+
+            <div class="progress-item">
+                <div class="progress-header">
+                    <span class="progress-label">Price Optimization</span>
+                    <span class="progress-value">10%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 10%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="data-grid" style="margin-top: 40px;">
+            <div class="data-card">
+                <div class="data-icon">⚡</div>
+                <div class="data-value">91%</div>
+                <div class="data-label">Match Accuracy</div>
+            </div>
+            <div class="data-card">
+                <div class="data-icon">⏱️</div>
+                <div class="data-value">3.2s</div>
+                <div class="data-label">Avg Decision Time</div>
+            </div>
+            <div class="data-card">
+                <div class="data-icon">📊</div>
+                <div class="data-value">4.8/5</div>
+                <div class="data-label">Satisfaction Score</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Metrics Section -->
+    <section id="metrics" class="content-section">
+        <div class="glass-card">
+            <h2 class="card-title">
+                <span class="card-icon">📈</span>
+                Live Environmental Impact Metrics
+            </h2>
+        </div>
+
+        <div class="data-grid">
+            <div class="data-card">
+                <div class="data-icon">🌍</div>
+                <div class="data-value">2.0</div>
+                <div class="data-label">Tons CO₂ Saved</div>
+            </div>
+            <div class="data-card">
+                <div class="data-icon">💨</div>
+                <div class="data-value">75</div>
+                <div class="data-label">KG PM2.5 Prevented</div>
+            </div>
+            <div class="data-card">
+                <div class="data-icon">💰</div>
+                <div class="data-value">₹1.6K</div>
+                <div class="data-label">Farmer Earnings</div>
+            </div>
+            <div class="data-card">
+                <div class="data-icon">♻️</div>
+                <div class="data-value">500</div>
+                <div class="data-label">KG Waste Diverted</div>
+            </div>
+            <div class="data-card">
+                <div class="data-icon">🌾</div>
+                <div class="data-value">12</div>
+                <div class="data-label">Active Farmers</div>
+            </div>
+            <div class="data-card">
+                <div class="data-icon">🏭</div>
+                <div class="data-value">8</div>
+                <div class="data-label">Partner Industries</div>
+            </div>
+        </div>
+
+        <div class="glass-card" style="margin-top: 40px;">
+            <h3 style="color: var(--neon-green); margin-bottom: 20px;">Impact Calculation Formulas</h3>
+            <div style="display: grid; gap: 15px; color: rgba(255, 255, 255, 0.8);">
+                <div style="padding: 15px; background: rgba(0, 255, 136, 0.1); border-radius: 10px;">
+                    <strong>CO₂ Reduction:</strong> Waste (kg) × 4 = CO₂ saved (tons)
+                </div>
+                <div style="padding: 15px; background: rgba(0, 212, 255, 0.1); border-radius: 10px;">
+                    <strong>PM2.5 Prevention:</strong> Waste (kg) × 0.15 = PM2.5 prevented (kg)
+                </div>
+                <div style="padding: 15px; background: rgba(153, 69, 255, 0.1); border-radius: 10px;">
+                    <strong>Farmer Revenue:</strong> Waste (kg) × Price per kg = Total earnings (₹)
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tech Stack Section -->
+    <section id="tech" class="content-section">
+        <div class="glass-card">
+            <h2 class="card-title">
+                <span class="card-icon">⚙️</span>
+                Technology Stack
+            </h2>
+        </div>
+
+        <div class="hex-grid">
+            <div class="hex-item">
+                <div class="hexagon">
+                    <div class="hex-icon">⚛️</div>
+                    <div class="hex-label">Next.js 15</div>
+                </div>
+            </div>
+            <div class="hex-item">
+                <div class="hexagon">
+                    <div class="hex-icon">💙</div>
+                    <div class="hex-label">TypeScript</div>
+                </div>
+            </div>
+            <div class="hex-item">
+                <div class="hexagon">
+                    <div class="hex-icon">🎨</div>
+                    <div class="hex-label">Tailwind</div>
+                </div>
+            </div>
+            <div class="hex-item">
+                <div class="hexagon">
+                    <div class="hex-icon">🔥</div>
+                    <div class="hex-label">Firebase</div>
+                </div>
+            </div>
+            <div class="hex-item">
+                <div class="hexagon">
+                    <div class="hex-icon">🧠</div>
+                    <div class="hex-label">Gemini AI</div>
+                </div>
+            </div>
+            <div class="hex-item">
+                <div class="hexagon">
+                    <div class="hex-icon">📱</div>
+                    <div class="hex-label">PWA</div>
+                </div>
+            </div>
+            <div class="hex-item">
+                <div class="hexagon">
+                    <div class="hex-icon">🗄️</div>
+                    <div class="hex-label">Firestore</div>
+                </div>
+            </div>
+            <div class="hex-item">
+                <div class="hexagon">
+                    <div class="hex-icon">▲</div>
+                    <div class="hex-label">Vercel</div>
+                </div>
+            </div>
+            <div class="hex-item">
+                <div class="hexagon">
+                    <div class="hex-icon">📐</div>
+                    <div class="hex-label">Haversine</div>
+                </div>
+            </div>
+            <div class="hex-item">
+                <div class="hexagon">
+                    <div class="hex-icon">🌐</div>
+                    <div class="hex-label">next-intl</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-card" style="margin-top: 40px;">
+            <h3 style="color: var(--neon-green); margin-bottom: 20px;">Performance Benchmarks</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                <div style="text-align: center;">
+                    <div style="font-size: 2em; font-weight: 700; color: var(--neon-blue);">125KB</div>
+                    <div style="color: rgba(255, 255, 255, 0.7);">JS Bundle Size</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 2em; font-weight: 700; color: var(--neon-green);">< 500ms</div>
+                    <div style="color: rgba(255, 255, 255, 0.7);">Real-time Latency</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 2em; font-weight: 700; color: var(--neon-purple);">2-3s</div>
+                    <div style="color: rgba(255, 255, 255, 0.7);">Photo Upload</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 2em; font-weight: 700; color: var(--neon-pink);">99.9%</div>
+                    <div style="color: rgba(255, 255, 255, 0.7);">Uptime SLA</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tooltip -->
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        // Tab switching
+        function switchTab(tabName) {
+            // Hide all sections
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Remove active from all tabs
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(tabName).classList.add('active');
+            
+            // Mark tab as active
+            event.target.classList.add('active');
+        }
+
+        // Interactive node effects
+        document.querySelectorAll('.node').forEach(node => {
+            node.addEventListener('mouseenter', function(e) {
+                this.style.transform = 'scale(1.2)';
+            });
+            
+            node.addEventListener('mouseleave', function(e) {
+                this.style.transform = 'scale(1)';
+            });
+        });
+
+        // Tooltip functionality
+        const tooltip = document.getElementById('tooltip');
+        
+        document.querySelectorAll('.hexagon, .data-card, .process-step').forEach(element => {
+            element.addEventListener('mouseenter', function(e) {
+                const rect = this.getBoundingClientRect();
+                tooltip.style.left = rect.left + (rect.width / 2) - 150 + 'px';
+                tooltip.style.top = rect.top - 60 + 'px';
+                tooltip.textContent = 'Click for more details';
+                tooltip.classList.add('active');
+            });
+            
+            element.addEventListener('mouseleave', function() {
+                tooltip.classList.remove('active');
+            });
+        });
+
+        // Animated counter
+        function animateCounter(element, target, duration = 2000) {
+            const start = 0;
+            const increment = target / (duration / 16);
+            let current = start;
+            
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    element.textContent = target;
+                    clearInterval(timer);
+                } else {
+                    element.textContent = Math.floor(current);
+                }
+            }, 16);
+        }
+
+        // Animate counters on scroll
+        const observerOptions = {
+            threshold: 0.5
+        };
+
+        const counterObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const value = parseInt(entry.target.textContent);
+                    if (!isNaN(value)) {
+                        animateCounter(entry.target, value);
+                    }
+                    counterObserver.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.data-value').forEach(el => {
+            counterObserver.observe(el);
+        });
+
+        // Parallax effect on scroll
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            const parallax = document.querySelector('.animated-bg');
+            if (parallax) {
+                parallax.style.transform = `translateY(${scrolled * 0.5}px)`;
+            }
+        });
+
+        // Add keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            const tabs = Array.from(document.querySelectorAll('.tab-btn'));
+            const activeIndex = tabs.findIndex(tab => tab.classList.contains('active'));
+            
+            if (e.key === 'ArrowLeft' && activeIndex > 0) {
+                tabs[activeIndex - 1].click();
+            } else if (e.key === 'ArrowRight' && activeIndex < tabs.length - 1) {
+                tabs[activeIndex + 1].click();
+            }
+        });
+
+        // Dynamic color theme based on time
+        const hour = new Date().getHours();
+        if (hour >= 6 && hour < 12) {
+            document.documentElement.style.setProperty('--neon-green', '#00ff88');
+        } else if (hour >= 12 && hour < 18) {
+            document.documentElement.style.setProperty('--neon-green', '#00ffaa');
+        } else {
+            document.documentElement.style.setProperty('--neon-green', '#00ff66');
+        }
+
+        // Initialize animations on load
+        window.addEventListener('load', () => {
+            document.body.style.opacity = '0';
+            setTimeout(() => {
+                document.body.style.transition = 'opacity 1.5s ease';
+                document.body.style.opacity = '1';
+            }, 100);
+        });
+
+        console.log('ECOX Labs Interactive Visualization Loaded!');
+    </script>
+</body>
+</html>
